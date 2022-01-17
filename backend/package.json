@@ -7,13 +7,15 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "build": "strapi build",
-    "strapi": "strapi"
+    "strapi": "strapi",
+    "gcp-build": "strapi build"
+
   },
-  "devDependencies": {},
   "dependencies": {
-    "@strapi/strapi": "4.0.4",
-    "@strapi/plugin-users-permissions": "4.0.4",
     "@strapi/plugin-i18n": "4.0.4",
+    "@strapi/plugin-users-permissions": "4.0.4",
+    "@strapi/strapi": "4.0.4",
+    "pg": "^8.7.1",
     "sqlite3": "5.0.2"
   },
   "author": {
