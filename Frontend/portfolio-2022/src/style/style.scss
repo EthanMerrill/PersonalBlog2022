@@ -1,7 +1,5 @@
 .app{
-    width: 100vw;   
-   overflow-x: clip;
-   overflow-y: scroll;
+  overflow-x: clip;
 }
 ::-webkit-scrollbar {
     width: 0;  /* Remove scrollbar space */
@@ -12,7 +10,6 @@
       display: none;  /* Safari and Chrome */
 }
 header{  
-  
   .wrapper {
     overflow:hidden;
     width: 100vw;
@@ -104,7 +101,7 @@ header{
     position:absolute;
     top:5%;
     left: 5%;
-    width: 60%;
+    width: 40%;
   }
 
 
@@ -117,7 +114,22 @@ body {
     color: hsla(0, 0%, 34%, 1);
     font-size:55px;
     width:40vw;
+    margin-left: 50px;
   }
+  .sticky{
+    position: sticky;
+  }
+
+  .dt1{
+    height: 50px;
+    top:50px;
+  }
+
+  .dt2{
+    height:50px;
+    top:100px;
+  }
+  
 
   .all-cards-container{
     max-width: 80%;
@@ -133,7 +145,7 @@ body {
   }
   .project-card-wrapper{
     max-width: 700px;
-    height: 250px;
+    height: 280px;
     background: #FFFFFF;
     border: 4px solid #575757;
     box-sizing: border-box;
@@ -151,8 +163,13 @@ body {
     border-radius: 20px;
     
   }
-
+  .card-text-container{
+    overflow: hidden;
+  }
   .card-image-container{
 
   }
+
+
+
 }
