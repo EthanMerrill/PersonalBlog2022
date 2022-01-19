@@ -1,5 +1,13 @@
+// Colors
+$main-text-color: hsla(0, 0%, 34%, 1);
+
+html{
+   scroll-behavior: smooth
+}
+
 .app{
   overflow-x: clip;
+ 
 }
 ::-webkit-scrollbar {
     width: 0;  /* Remove scrollbar space */
@@ -108,10 +116,17 @@ header{
 }
 
 body {
+  a {
+    text-decoration: none;
+    color:$main-text-color
+  }
+  :hover{
+    text-decoration: none;
+  }
   .dynamicTitle{
     font-family: inter;
     font-weight: 700;
-    color: hsla(0, 0%, 34%, 1);
+    color: $main-text-color;
     font-size:55px;
     width:40vw;
     margin-left: 50px;
@@ -119,15 +134,27 @@ body {
   .sticky{
     position: sticky;
   }
+  .sticky-bottom{
+    bottom:0px;
+    position:sticky
+  }
 
   .dt1{
     height: 50px;
     top:50px;
+    
   }
 
   .dt2{
     height:50px;
     top:100px;
+    bottom: 100px
+  }
+
+  .dt3{
+    height:50px;
+    top:150px;
+    bottom: 50px
   }
   
 

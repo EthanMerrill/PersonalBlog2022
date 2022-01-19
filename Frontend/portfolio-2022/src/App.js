@@ -33,19 +33,25 @@ function App() {
         <h2 className='sticky-title2'>TITLE2</h2>
       </div>
       </div> */}
-          <h2 className='dynamicTitle dt1 sticky'>Web Development </h2>
-          <div className='all-cards-container'>
+        <h2 className='dynamicTitle dt1 sticky'><a href='web'>Web Development</a> </h2>
+          <div id = 'web' className='all-cards-container'>
             <Projectcard></Projectcard>
             <Projectcard></Projectcard>
             <Projectcard></Projectcard>
           </div>
-          <h2 className="dynamicTitle dt2 sticky"> Mechanical Design </h2>          
-          <div className='all-cards-container'>
+          <h2 className="dynamicTitle dt2 sticky-bottom dt2"> <a href='#design'> Mechanical Design</a> </h2>   
+          {/* <h2 className="dynamicTitle dt2 sticky-bottom"> Mechanical Design </h2>             */}
+          <div id='design' className='all-cards-container'>
             <Projectcard></Projectcard>
             <Projectcard></Projectcard>
             <Projectcard></Projectcard>
           </div>
-
+        <h2 className="dynamicTitle dt2 sticky-bottom dt3"> <a href='#marine'> Marine Experience </a></h2>   
+          <div id ='marine' className='all-cards-container'>
+            <Projectcard></Projectcard>
+            <Projectcard></Projectcard>
+            <Projectcard></Projectcard>
+          </div>
       </body>
     </div >
   );
