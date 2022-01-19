@@ -9,7 +9,6 @@
     "build": "strapi build",
     "strapi": "strapi",
     "gcp-build": "strapi build"
-
   },
   "dependencies": {
     "@strapi/plugin-i18n": "4.0.4",
@@ -25,7 +24,7 @@
     "uuid": "cc0bce25-989f-454e-88e0-85b0ce2e16ef"
   },
   "engines": {
-    "node": ">=12.x.x <=16.x.x",
+    "node": "14.x.x",
     "npm": ">=6.0.0"
   },
   "license": "MIT"
