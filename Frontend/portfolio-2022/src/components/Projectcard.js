@@ -16,10 +16,17 @@ const Component = (props) => {
     // JSX return
     return(
         <>
-            <div className="project-card-wrapper">
-                <div className="card-image-container">
+        <div className='whole-card-container'>
+            <div classname='card-image-container'>
                     <img className="card-image" src="https://via.placeholder.com/200x200" alt="" />
-                </div>
+            </div>
+            <div className='card-image-container'>
+                <img className="card-image" src="https://via.placeholder.com/200x200" alt="" />
+            </div>
+            <div className="project-card-wrapper">
+            <div className="card-image-container">
+                <img className="card-image" src="https://via.placeholder.com/200x200" alt="" />
+            </div>
                 <div className="card-text-container">
                     <h3 className="card-title">Test title</h3>
 
@@ -33,6 +40,7 @@ const Component = (props) => {
                
                 </div>
             </div>
+        </div>
         </>
     )
 }
