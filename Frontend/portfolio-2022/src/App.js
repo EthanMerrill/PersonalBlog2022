@@ -1,23 +1,34 @@
 import './style/style.scss';
 import Projectcard from './components/Projectcard';
-
+import {supabase} from './supabaseClient';
+import React, { useEffect, useState } from "react";
 
 function App() {
 
+  const [projects, setProjects] = useState([]);
 
+  const getProjects = async () => {
+    const resp = await supabase
+    .from('Projects')
+    .select()
+    // .orderBy('created_at', 'desc')
+    
+    return resp
+  }
+  getProjects().then(data => {console.log(data)});
   return (
     <div className="app">
 
       <header className="App-header">
         <link rel="preconnect" href="https://fonts.googleapis.com"></link>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin></link>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true"></link>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap" rel="stylesheet"></link>
-        <div class="wrapper">
+        <div className="wrapper">
           <div className="rotated-wrapper">
-            <div class="base one"></div>
-            <div class="base two"></div>
-            <div class="base three"></div>
-            <div class="base four"></div>
+            <div className="base one"></div>
+            <div className="base two"></div>
+            <div className="base three"></div>
+            <div className="base four"></div>
           </div>
         </div>
         <div className='title-container'>
@@ -26,7 +37,7 @@ function App() {
         </div>
       </header >
 
-      <body>
+      
         {/* <div className='absolute-titles'>
       <div className="sticky titles-box">
         <h2 className="sticky-title">TITLE1</h2>
@@ -52,7 +63,7 @@ function App() {
             <Projectcard></Projectcard>
             <Projectcard></Projectcard>
           </div>
-      </body>
+      
     </div >
   );
 }
