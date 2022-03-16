@@ -1,5 +1,6 @@
 import './style/style.scss';
 import Projectcard from './components/Projectcard';
+import Categorysection from './components/Categorysection';
 import {supabase} from './supabaseClient';
 import React, { useEffect, useState } from "react";
 
@@ -12,10 +13,21 @@ function App() {
     .from('Projects')
     .select()
     // .orderBy('created_at', 'desc')
-    
     return resp
   }
-  getProjects().then(data => {console.log(data)});
+  useEffect(() => {
+    getProjects().then(data => { setProjects(data.data); console.log(data) });
+  }, [])
+
+  useEffect(()=>{
+    console.log(projects)
+    const categories = [...new Set(projects.map(e => e.Category))];
+    console.log(categories)
+  },[projects])
+
+  //get unique categories
+
+
   return (
     <div className="app">
 
@@ -38,12 +50,8 @@ function App() {
       </header >
 
       
-        {/* <div className='absolute-titles'>
-      <div className="sticky titles-box">
-        <h2 className="sticky-title">TITLE1</h2>
-        <h2 className='sticky-title2'>TITLE2</h2>
-      </div>
-      </div> */}
+
+        <Categorysection props={projects.filter(e => e.Category = 'Web Development')}></Categorysection>
         <h2 className='dynamicTitle dt1 sticky'><a href='web'>Web Development</a> </h2>
           <div id = 'web' className='all-cards-container'>
             <Projectcard></Projectcard>

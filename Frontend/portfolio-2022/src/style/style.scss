@@ -169,6 +169,9 @@ body {
   }
   .card-image{
     border-radius: 20px;
+    height: 200px;
+    width: 200px;
+    object-fit: fill; //also, cover
   }
   .project-card-wrapper{
     max-width: 700px;

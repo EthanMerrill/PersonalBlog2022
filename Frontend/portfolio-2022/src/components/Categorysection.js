@@ -1,0 +1,31 @@
+/* eslint-disable */
+import React, { useEffect, useState } from "react";
+import Projectcard from './Projectcard'
+
+const Component = (props) => {
+    //this component takes all the site data for one category and creates project cards for each project
+    // destructure props
+    const projects = props.props
+    // State Variables
+    // const [variableName, setVariableName] = useState(null)
+
+    //Use Effects
+        //useEffect desc
+    useEffect(()=> {
+        
+    },[])
+    console.log()
+    // JSX return
+    return(
+        <>
+            <h2 className='dynamicTitle dt1 sticky'><a href='web'>{projects[0]?.category}</a> </h2>
+            <div className='all-cards-container'>
+            {projects?.map(e => {
+                return <Projectcard key={e.id} props={e}></Projectcard>
+            })}
+            </div>
+        </>
+    )
+}
+
+export default Component
