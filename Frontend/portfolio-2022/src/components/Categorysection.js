@@ -14,11 +14,11 @@ const Component = (props) => {
     useEffect(()=> {
         
     },[])
-    console.log()
+    console.log(projects[0]?.Category)
     // JSX return
     return(
         <>
-            <h2 className='dynamicTitle dt1 sticky'><a href='web'>{projects[0]?.category}</a> </h2>
+            <h2 className='dynamicTitle dt1 sticky'><a href='web'>{projects[0]?.Category}</a> </h2>
             <div className='all-cards-container'>
             {projects?.map(e => {
                 return <Projectcard key={e.id} props={e}></Projectcard>
