@@ -1,13 +1,15 @@
 // Colors
 $main-text-color: hsla(0, 0%, 34%, 1);
 
+// fonts
+$title-font-size: 2.5rem;
+$title-font-offset: 50px;
+
 html{
    scroll-behavior: smooth
 }
 
 .app{
-  overflow-x: clip;
- 
 }
 ::-webkit-scrollbar {
     width: 0;  /* Remove scrollbar space */
@@ -19,6 +21,7 @@ html{
 }
 header{  
   .wrapper {
+    overflow-x: clip;
     overflow:hidden;
     width: 100vw;
     height: 40vh;
@@ -33,9 +36,9 @@ header{
   .rotated-wrapper{
     overflow:hidden;
     
-    width: 100vw;
+    width: 150vw;
     height: 65vh;
-    transform: rotate(-15deg) translateY(-50vh) translateX(-45px); 
+    transform: rotate(-15deg) translateY(-65vh) translateX(-45px); 
     background-color: rgba(158, 224, 95, 0.609);
   }
 
@@ -43,8 +46,6 @@ header{
     position: absolute;
     filter: blur(60px);
     opacity: 0.6;
-
-    
   }
 
   .one {
@@ -107,15 +108,37 @@ header{
       font-size:40px;
     }
     position:absolute;
-    top:5%;
-    left: 5%;
+    top:20px;
+    left: 20px;
     width: 40%;
   }
 
 
 }
+  //title mixin
+@mixin title-classes {
+// Generate the classes by iterating through the array
+//  $i becomes the index, which we will interpolate for
+//  the class name and the index for each function call
+@for $i from 0 through 10 {
+  .dt#{$i}{
+    height: 50px;
+    top: $title-font-offset*$i;
+    bottom: 300-$i*$title-font-offset;
+    }
+  }
+}
+// Output the mixin's classes
+@include title-classes;
 
 body {
+  margin:0px;
+
+  .projects-container{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+  }
   a {
     text-decoration: none;
     color:$main-text-color
@@ -123,6 +146,21 @@ body {
   :hover{
     text-decoration: none;
   }
+  h3 {
+    margin-bottom: 10px;
+    margin-top:0px;
+    size:1.5em;
+    font-weight: 400;
+    font-family: 'inter';
+  }
+
+  p{
+    font-size:200;
+    size:1em;
+    line-height:1.5em;
+    font-family: 'inter';
+  }
+
   .dynamicTitle{
     font-family: inter;
     font-weight: 700;
@@ -139,34 +177,13 @@ body {
     position:sticky
   }
 
-  .dt1{
-    height: 50px;
-    top:50px;
-    
-  }
-
-  .dt2{
-    height:50px;
-    top:100px;
-    bottom: 100px
-  }
-
-  .dt3{
-    height:50px;
-    top:150px;
-    bottom: 50px
-  }
-  
-
   .all-cards-container{
-    max-width: 80%;
+    // max-width: 80%;
     position:relative;
-    left: 50%;
+    display:flex;
+    flex-direction: column;
   }
-  h3 {
-    margin-bottom: 10px;
-    margin-top:0px;
-  }
+
   .card-image{
     border-radius: 20px;
     height: 200px;
@@ -175,6 +192,7 @@ body {
   }
   .project-card-wrapper{
     max-width: 700px;
+    width: 66%;
     height: 280px;
     background: #FFFFFF;
     border: 4px solid #575757;
@@ -185,7 +203,10 @@ body {
     align-items: center;
     gap: 25px;
     padding:25px;
-    margin-top: 60px ;
+    margin:60px 25px 0px 25px;
+    position:relative;
+    align-self: flex-end;
+    
   }
   .project-card-wrapper:hover{
     border: 4px solid #3b3b3b;
@@ -194,7 +215,7 @@ body {
     
   }
   .card-text-container{
-    overflow: hidden;
+    // overflow: hidden;
   }
   .card-image-container{
 

@@ -44,35 +44,22 @@ function App() {
           </div>
         </div>
         <div className='title-container'>
-          <h1 className="intro-title">Hi! I'm Ethan.<br></br>
-            Here are some projects I've worked on</h1>
+          <h1 className="intro-title">Hi! I'm Ethan<br></br>
+            Here are some of my projects</h1>
         </div>
       </header >
-
-      
+      <body>
+      <div className="projects-container">
         {projects &&
-          <Categorysection props={projects.filter(e =>  e.P_Category === categories[0])}></Categorysection>
+          categories.map((category,i )=> {
+            var filteredArticles = projects.filter(e => e.P_Category === category)
+            
+            return <Categorysection key = {i} props={[filteredArticles,i]}></Categorysection>
+          })
         }
         {/* <h2 className='dynamicTitle dt1 sticky'><a href='web'>Web Development</a> </h2> */}
-          <div id = 'web' className='all-cards-container'>
-            <Projectcard></Projectcard>
-            <Projectcard></Projectcard>
-            <Projectcard></Projectcard>
-          </div>
-          <h2 className="dynamicTitle dt2 sticky-bottom dt2"> <a href='#design'> Mechanical Design</a> </h2>   
-          {/* <h2 className="dynamicTitle dt2 sticky-bottom"> Mechanical Design </h2>             */}
-          <div id='design' className='all-cards-container'>
-            <Projectcard></Projectcard>
-            <Projectcard></Projectcard>
-            <Projectcard></Projectcard>
-          </div>
-        <h2 className="dynamicTitle dt2 sticky-bottom dt3"> <a href='#marine'> Marine Experience </a></h2>   
-          <div id ='marine' className='all-cards-container'>
-            <Projectcard></Projectcard>
-            <Projectcard></Projectcard>
-            <Projectcard></Projectcard>
-          </div>
-      
+        </div>
+      </body>
     </div >
   );
 }
