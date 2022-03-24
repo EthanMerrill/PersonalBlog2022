@@ -5,40 +5,41 @@ $main-text-color: hsla(0, 0%, 34%, 1);
 $title-font-size: 2.5rem;
 $title-font-offset: 50px;
 
-html{
-   scroll-behavior: smooth
+html {
+  scroll-behavior: smooth;
 }
 
-.app{
+.app {
 }
 ::-webkit-scrollbar {
-    width: 0;  /* Remove scrollbar space */
-    background: transparent;  /* Optional: just make scrollbar invisible */
+  width: 0; /* Remove scrollbar space */
+  background: transparent; /* Optional: just make scrollbar invisible */
 }
 /* Optional: show position indicator in red */
 ::-webkit-scrollbar-thumb {
-      display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
-header{  
+header {
   .wrapper {
     overflow-x: clip;
-    overflow:hidden;
+    overflow: hidden;
     width: 100vw;
     height: 40vh;
     background: #fff;
     position: relative;
-    padding:15px;
+    padding: 15px;
     // clip-path: polygon(1 0, 100% 0, 100% 100%, 0 100%);
 
     // border-radius: 40px;
   }
 
-  .rotated-wrapper{
-    overflow:hidden;
-    
+  .rotated-wrapper {
+    overflow: hidden;
+
     width: 150vw;
     height: 65vh;
-    transform: rotate(-15deg) translateY(-65vh) translateX(-45px); 
+    transform: rotate(-15deg) translateY(-65vh)
+      translateX(-45px);
     background-color: rgba(158, 224, 95, 0.609);
   }
 
@@ -53,8 +54,8 @@ header{
     width: 50vw;
     height: 50vh;
     background-color: #373372;
-    left:-50px;
-    top:-30px;
+    left: -50px;
+    top: -30px;
     z-index: 3;
     animation: fly 12s linear infinite;
   }
@@ -63,8 +64,8 @@ header{
     width: 50vw;
     height: 50vh;
     background-color: #43b699;
-    bottom:-40px;
-    left:30px;
+    bottom: -40px;
+    left: 30px;
     animation: fly 12s linear infinite;
   }
 
@@ -72,59 +73,59 @@ header{
     border-radius: 100%;
     width: 50vw;
     height: 50vh;
-    bottom:-80px;
-    right:60px;
+    bottom: -80px;
+    right: 60px;
     background-color: #89699e;
     animation: fly 12s linear infinite;
   }
 
-    .four {
+  .four {
     border-radius: 100%;
     width: 50vw;
     height: 50vh;
-    bottom:80px;
-    top:20px;
-    right:200px;
+    bottom: 80px;
+    top: 20px;
+    right: 200px;
     background-color: #439bb6bb;
     animation: fly 12s linear infinite;
   }
 
   @keyframes fly {
     100% {
-      transform:rotate(1turn) translate(100px) rotate(-1turn);
+      transform: rotate(1turn) translate(100px)
+        rotate(-1turn);
     }
   }
 
   @keyframes flyPlus {
     100% {
-      transform:rotate(-1turn) translate(100px) rotate(1turn);
+      transform: rotate(-1turn) translate(100px)
+        rotate(1turn);
     }
   }
-  .title-container{
-    .intro-title{
+  .title-container {
+    .intro-title {
       font-family: inter;
       font-weight: 600;
-      color:#fff;
-      font-size:40px;
+      color: #fff;
+      font-size: 40px;
     }
-    position:absolute;
-    top:20px;
+    position: absolute;
+    top: 20px;
     left: 20px;
     width: 40%;
   }
-
-
 }
-  //title mixin
+//title mixin
 @mixin title-classes {
-// Generate the classes by iterating through the array
-//  $i becomes the index, which we will interpolate for
-//  the class name and the index for each function call
-@for $i from 0 through 10 {
-  .dt#{$i}{
-    height: 50px;
-    top: $title-font-offset*$i;
-    bottom: 300-$i*$title-font-offset;
+  // Generate the classes by iterating through the array
+  //  $i becomes the index, which we will interpolate for
+  //  the class name and the index for each function call
+  @for $i from 0 through 10 {
+    .dt#{$i} {
+      height: 50px;
+      top: $title-font-offset * $i;
+      bottom: 300-$i * $title-font-offset;
     }
   }
 }
@@ -132,125 +133,133 @@ header{
 @include title-classes;
 
 body {
-  margin:0px;
+  margin: 0px;
 
-  .projects-container{
-    width:100%;
-    display:flex;
-    flex-direction:column;
+  .projects-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
   }
   a {
     text-decoration: none;
-    color:$main-text-color
+    color: $main-text-color;
   }
-  :hover{
+  :hover {
     text-decoration: none;
   }
   h3 {
     margin-bottom: 10px;
-    margin-top:0px;
-    size:1.5em;
+    margin-top: 0px;
+    size: 1.5em;
     font-weight: 400;
-    font-family: 'inter';
+    font-family: "inter";
   }
 
-  p{
-    font-size:200;
-    size:1em;
-    line-height:1.5em;
-    font-family: 'inter';
+  p {
+    font-size: 200;
+    size: 1em;
+    line-height: 1.5em;
+    font-family: "inter";
   }
 
-  .dynamicTitle{
+  .dynamicTitle {
     font-family: inter;
     font-weight: 700;
     color: $main-text-color;
-    font-size:55px;
-    width:40vw;
+    font-size: 55px;
+    width: 40vw;
     margin-left: 50px;
   }
-  .sticky{
+  .sticky {
     position: sticky;
   }
-  .sticky-bottom{
-    bottom:0px;
-    position:sticky
+  .sticky-bottom {
+    bottom: 0px;
+    position: sticky;
   }
 
-  .all-cards-container{
+  .all-cards-container {
     // max-width: 80%;
-    position:relative;
-    display:flex;
+    position: relative;
+    display: flex;
     flex-direction: column;
     flex-basis: center;
   }
 
-  .card-image{
+  .card-image {
     border-radius: 20px;
     height: 200px;
     width: 200px;
     // object-fit: fill;
-   img{
+    img {
       object-fit: cover;
       height: 100%;
       width: 100%;
       border-radius: 20px;
-      
-     } //also, cover
+    } 
   }
-  
-  .card-image-placeholder{
-      height:200px;
-      width: 200px;
-    }
 
-  .images-carousel-stacked{
+  .carousel-container {
+    scroll-behavior: smooth;
+    // overflow-x: scroll;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    transition:.4s;
+    margin:0px;
+    padding:0px;
+    height: 215px !important;
+    padding-top: 15px;
+  }
+
+  .imc{
+    display: flex;
+    flex-direction: row;
+    gap:10px;
+    width: 800px;
+    height: 200px;
+  }
+  .stacked {
     height: 200px;
     width: 200px;
-    *{
-      position:absolute;
-    }
+    // position: relative;
   }
 
-  .images-carousel-unstacked{
-      display:flex;
-      flex-direction: row;
-      justify-content: space-between;
-    }
-
-  .project-card-wrapper{
-        width:100%;
-        display:flex;
-        flex-direction: row;
+  .unstacked {
+    height: 200px;
+    width: 600px;
+  }
+  // .transition {
+  //   transition: 5s;
+  //   display: flex;
+  //   flex-direction: row;
+  // }
+  .project-card-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
-  .project-card-border{
-    // max-width: 700px;
+  .project-card-border {
+    max-width: 90%;
     // width: 66%;
     height: 280px;
-    background: #FFFFFF;
-    border: 4px solid #575757;
+    background: #ffffff;
+    border: 3px solid #575757;
     box-sizing: border-box;
     border-radius: 20px;
-    display:flex;
+    display: flex;
     align-items: center;
     gap: 25px;
-    padding:25px;
+    padding: 25px;
     margin-left: auto;
-    margin-right: 0;
-    position:relative;
+    margin-right: 25px;
+    position: relative;
     align-self: flex-end;
   }
-  .card-text-container{
-    width:auto;
+  .card-text-container {
+    // width: 66%;
+    min-width: 300px;
+    max-width: 400px;
+    position: relative;
   }
-  .card-image-container{
-    // border-radius: 20px;
-    // height: 200px;
-    // width: 200px;
-    // object-fit: fill;
-  }
-
-
-
 }
