@@ -1,23 +1,29 @@
 // Colors
 $main-text-color: hsla(0, 0%, 34%, 1);
-
+$background-color: hsla(78, 10%, 99%, .9);
 // fonts
 $title-font-size: 2.5rem;
 $title-font-offset: 50px;
 
 html {
   scroll-behavior: smooth;
+  
+}
+body{
+  background-color: $background-color;
+  margin: 0px;
 }
 
-.app {
-}
 ::-webkit-scrollbar {
+  position: absolute;
+  height: 0px;
   width: 0; /* Remove scrollbar space */
-  background: transparent; /* Optional: just make scrollbar invisible */
+  display: none; /* Optional: just make scrollbar invisible */
 }
 /* Optional: show position indicator in red */
 ::-webkit-scrollbar-thumb {
-  display: none; /* Safari and Chrome */
+  // display: none; /* Safari and Chrome */
+  background: #ff0000;
 }
 header {
   .wrapper {
@@ -37,15 +43,14 @@ header {
     overflow: hidden;
 
     width: 150vw;
-    height: 65vh;
-    transform: rotate(-15deg) translateY(-65vh)
-      translateX(-45px);
+    height: 75vh;
+    transform: rotate(-15deg) translateY(-65vh) translateX(-45px);
     background-color: rgba(158, 224, 95, 0.609);
   }
 
   .base {
     position: absolute;
-    filter: blur(60px);
+    filter: blur(50px);
     opacity: 0.6;
   }
 
@@ -93,14 +98,14 @@ header {
   @keyframes fly {
     100% {
       transform: rotate(1turn) translate(100px)
-        rotate(-1turn);
+        // rotate(-1turn);
     }
   }
 
   @keyframes flyPlus {
     100% {
       transform: rotate(-1turn) translate(100px)
-        rotate(1turn);
+        // rotate(1turn);
     }
   }
   .title-container {
@@ -133,8 +138,8 @@ header {
 @include title-classes;
 
 body {
-  margin: 0px;
-
+  
+  
   .projects-container {
     width: 100%;
     display: flex;
@@ -210,6 +215,10 @@ body {
     height: 215px !important;
     padding-top: 15px;
   }
+  .carousel-container.hover{
+    transition:2s;
+    width: 230px;
+  }
 
   .imc{
     display: flex;
@@ -228,6 +237,8 @@ body {
     height: 200px;
     width: 600px;
   }
+
+
   // .transition {
   //   transition: 5s;
   //   display: flex;
@@ -242,8 +253,8 @@ body {
   .project-card-border {
     max-width: 90%;
     // width: 66%;
-    height: 280px;
-    background: #ffffff;
+    height: 260px;
+    background: hsla(44, 50%, 98%, .7);
     border: 3px solid #575757;
     box-sizing: border-box;
     border-radius: 20px;
@@ -255,6 +266,8 @@ body {
     margin-right: 25px;
     position: relative;
     align-self: flex-end;
+  }.hover{
+    background-color: hsla(44, 15%, 100%, 1);
   }
   .card-text-container {
     // width: 66%;

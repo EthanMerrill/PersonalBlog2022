@@ -48,7 +48,7 @@ function App() {
             Here are some of my projects</h1>
         </div>
       </header >
-      <body>
+      <div>
       <div className="projects-container">
         {projects &&
           categories.map((category,i )=> {
@@ -59,7 +59,7 @@ function App() {
         }
         {/* <h2 className='dynamicTitle dt1 sticky'><a href='web'>Web Development</a> </h2> */}
         </div>
-      </body>
+      </div>
     </div >
   );
 }

@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const Component = (props) => {
     // destructure props
@@ -10,14 +10,23 @@ const Component = (props) => {
     // State Vasriables
 
     const [showPhotos, setShowPhotos] = useState(false)
-
+    const [hover, setHover] = useState(false)
+    //ref
+    const theRef = useRef();
+    //scroll redirect
+    useEffect(() => {
+        console.log(showPhotos, hover)
+    }, [showPhotos, hover])
+    const handleScroll = () => {
+        console.log("scrolling")
+    }
     // JSX return
     return (
         <>
             <div className="project-card-wrapper">
 
-                <div className=" project-card-border" onMouseDown={() => setShowPhotos(!showPhotos)}>
-                    <div className={showPhotos ? "carousel-container stacked" : "carousel-container unstacked"}>
+                <div className={"project-card-border" + ((!hover && !showPhotos) ? "" : " hover")} onMouseDown={() => setShowPhotos(!showPhotos)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+                    <div ref = {theRef} className={showPhotos ? "carousel-container unstacked" : "carousel-container stacked"+((!hover&&!showPhotos) ? "":" hover")} onScroll={() => handleScroll}>
                         <div className="imc">
                             {Images &&
                                 Images.map((e, i) => {
