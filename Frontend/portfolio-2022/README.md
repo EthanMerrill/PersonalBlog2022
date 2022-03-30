@@ -9,3 +9,5 @@ this is a portfolio project undertaken to showcase my work and web development e
 - [ ] Add link highlighting color
 - [ ] Create mobile optimized site
 - [ ] Change icon and Title
+- [X] Connect images
+    - [ ] fix late load glitch
