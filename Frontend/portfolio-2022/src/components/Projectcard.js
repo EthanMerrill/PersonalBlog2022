@@ -6,21 +6,17 @@ const Component = (props) => {
     // const {propName} = props
     const Blurb = props?.props?.Blurb
     const Title = props?.props?.Title
-    const Images = props?.props?.Images
+    const Images = "" //props?.props?.Images
+    // other vars
+    // const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
     // State Vasriables
 
     const [showPhotos, setShowPhotos] = useState(false)
     const [hover, setHover] = useState(false)
     //ref
     const theRef = useRef();
-    //scroll redirect
-    useEffect(() => {
-        console.log(showPhotos, hover)
-    }, [showPhotos, hover])
-    const handleScroll = () => {
-        console.log("scrolling")
-    }
     // JSX return
+    // supabaseUrl+'storage/v1/object/public/project-photos'+/HYC/raceCoach.png
     return (
         <>
             <div className="project-card-wrapper">
@@ -31,9 +27,8 @@ const Component = (props) => {
                             {Images &&
                                 Images.map((e, i) => {
                                     for (var key in e) {
-                                        console.log(i, key, e[key])
                                         return (
-                                            <div className={"card-image image-" + i}>
+                                            <div key = {i} className={"card-image image-" + i}>
                                                 <img className={"image-"} key={i} src={e[key]} alt={key}></img>
                                             </div>
                                         )

@@ -1,6 +1,11 @@
 // Colors
 $main-text-color: hsla(0, 0%, 34%, 1);
 $background-color: hsla(78, 10%, 99%, .9);
+//Aurora Colors
+$aur-1: #373372;
+$aur-2: #43b699;
+$aur-3: #89699e;
+$aur-4: #439bb6bb;
 // fonts
 $title-font-size: 2.5rem;
 $title-font-offset: 50px;
@@ -41,10 +46,9 @@ header {
 
   .rotated-wrapper {
     overflow: hidden;
-
     width: 150vw;
-    height: 75vh;
-    transform: rotate(-15deg) translateY(-65vh) translateX(-45px);
+    height: 55vh;
+    transform: rotate(-15deg) translateY(-45vh) translateX(-45px);
     background-color: rgba(158, 224, 95, 0.609);
   }
 
@@ -58,30 +62,30 @@ header {
     border-radius: 100%;
     width: 50vw;
     height: 50vh;
-    background-color: #373372;
-    left: -50px;
-    top: -30px;
+    background-color:$aur-1;
+    // left: -50px;
+    // top: -30px;
     z-index: 3;
-    animation: fly 12s linear infinite;
+    animation: fly 50s linear infinite;
   }
 
   .two {
     width: 50vw;
     height: 50vh;
-    background-color: #43b699;
+    background-color: $aur-2;
     bottom: -40px;
     left: 30px;
-    animation: fly 12s linear infinite;
+    animation: fly 50s linear alternate;
   }
 
   .three {
     border-radius: 100%;
     width: 50vw;
     height: 50vh;
-    bottom: -80px;
-    right: 60px;
-    background-color: #89699e;
-    animation: fly 12s linear infinite;
+    bottom: -50px;
+    right: 50px;
+    background-color: aur-3;
+    animation: fly 50s linear alternate;
   }
 
   .four {
@@ -91,23 +95,16 @@ header {
     bottom: 80px;
     top: 20px;
     right: 200px;
-    background-color: #439bb6bb;
-    animation: fly 12s linear infinite;
+    background-color: $aur-4;
+    animation: fly 50s linear alternate;
   }
 
   @keyframes fly {
-    100% {
-      transform: rotate(1turn) translate(100px)
-        // rotate(-1turn);
+    0% {transform: rotate(1turn); background-color:$aur-2; }
+    50% {transform: rotate(0); background-color:$aur-3;}
+    100% {transform: rotate(1turn); background-color:$aur-4;}
     }
-  }
 
-  @keyframes flyPlus {
-    100% {
-      transform: rotate(-1turn) translate(100px)
-        // rotate(1turn);
-    }
-  }
   .title-container {
     .intro-title {
       font-family: inter;
