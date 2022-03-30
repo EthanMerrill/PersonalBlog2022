@@ -37,13 +37,13 @@ function App() {
     return (data)
   }
 
-  const getImageUrls = async (path) => {
+  const getImageUrls = async (folder, filename) => {
     const { data, error } = await supabase
       .storage
       .from('project-photos')
-      .getPublicUrl(path)
-
-    return (data)
+      .getPublicUrl(filename)
+    data.publicURL = data.publicURL.replace(filename,(folder+"/"+filename))
+    return (data.publicURL)
   }
 
   useEffect(() => {
@@ -61,49 +61,24 @@ function App() {
           // if the imagefolder is found, get the filenames from the folder
           if (image) {
             getImageFolderFiles(image.name).then(data => {
-              project.Images = data.map(e => e.name)
+              project.ImageURLs = []
+              project.ImagesNames = data.filter(e => e.name !== ".emptyFolderPlaceholder").map(e => e.name)
+              console.log(project.ImagesNames)
               // for each image, get the url
-              project.Images.map(e => {
-                getImageUrls(e).then(data => {
-                  project.Images = data
+              project.ImagesNames.map(e => {
+                getImageUrls(project.Images, e).then(data => {
+                  project.ImageURLs.push(data)
+                  
                 })
+                return project
+                // console.log(image.name, data)
               })
             })
           }
         }
+        return project
       })
     })
-
-    // get Image folders
-    // look for image folders that match the image column contents of the projects
-
-    // getImageFolders().then((data) => {
-    //   var projectsWithImages = folders.map(e => {
-    //     var matchingProject = projects.filter(project => project.Images = e.name)
-    //     if (matchingProject.length > 0) {
-    //         var images = getImageFolderFiles(e.name)
-    //           .then((data) => {
-    //             var images = []
-    //             data.forEach(i => {
-    //               getImageUrls(i.name+data)
-    //                 .then((data) => {
-    //                   images.push(data)
-    //                   console.log(data)
-    //                 })
-    //             })
-    //             console.log(images)
-    //             return images
-
-    //           })
-    //     }
-    // //     // console.log(matchingProject)
-    // //     matchingProject[0].Images = images
-    // //     return (matchingProject)
-    //   })
-    //   console.log(projectsWithImages)
-    // })
-
-    // if match, store the image folder name in the project object
   }, [projects])
 
   useEffect(() => {

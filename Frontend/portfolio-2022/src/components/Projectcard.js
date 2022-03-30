@@ -6,7 +6,7 @@ const Component = (props) => {
     // const {propName} = props
     const Blurb = props?.props?.Blurb
     const Title = props?.props?.Title
-    const Images = "" //props?.props?.Images
+    const Images = props?.props?.ImageURLs
     // other vars
     // const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
     // State Vasriables
@@ -29,7 +29,8 @@ const Component = (props) => {
                                     for (var key in e) {
                                         return (
                                             <div key = {i} className={"card-image image-" + i}>
-                                                <img className={"image-"} key={i} src={e[key]} alt={key}></img>
+                                                <img className={"image-"} key={i} src={e} alt={key}></img>
+                                                
                                             </div>
                                         )
                                     }
