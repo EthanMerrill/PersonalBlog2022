@@ -1,43 +1,58 @@
 /* eslint-disable */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const Component = (props) => {
     // destructure props
     // const {propName} = props
+    const Blurb = props?.props?.Blurb
+    const Title = props?.props?.Title
+    const Images = props?.props?.Images
+    // State Vasriables
 
-    // State Variables
-    // const [variableName, setVariableName] = useState(null)
-
-    //Use Effects
-        //useEffect desc
-    useEffect(()=> {
-        
-    },[])
+    const [showPhotos, setShowPhotos] = useState(false)
+    const [hover, setHover] = useState(false)
+    //ref
+    const theRef = useRef();
+    //scroll redirect
+    useEffect(() => {
+        console.log(showPhotos, hover)
+    }, [showPhotos, hover])
+    const handleScroll = () => {
+        console.log("scrolling")
+    }
     // JSX return
-    return(
+    return (
         <>
-        <div className='whole-card-container'>
-            <div classname='card-image-container'>
-                    <img className="card-image" src="https://via.placeholder.com/200x200" alt="" />
-            </div>
-            <div className='card-image-container'>
-                <img className="card-image" src="https://via.placeholder.com/200x200" alt="" />
-            </div>
             <div className="project-card-wrapper">
-            <div className="card-image-container">
-                <img className="card-image" src="https://via.placeholder.com/200x200" alt="" />
-            </div>
-                <div className="card-text-container">
-                    <h3 className="card-title">Test title</h3>
 
-                    <div className="card-description">
-                        <p>
-                            • Served as project manager for the development of a mobile Augmented Reality (AR) application for a top 5 utility company.
-                            •AR Application used for communicating electric transmission infrastructure placement on homeowner’s property.
-                            • Developed a controls logging and monitoring dashboard for a top 3 US Bank.
-                        </p>
-                </div>
-               
+                <div className={"project-card-border" + ((!hover && !showPhotos) ? "" : " hover")} onMouseDown={() => setShowPhotos(!showPhotos)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+                    <div ref = {theRef} className={showPhotos ? "carousel-container unstacked" : "carousel-container stacked"+((!hover&&!showPhotos) ? "":" hover")} onScroll={() => handleScroll}>
+                        <div className="imc">
+                            {Images &&
+                                Images.map((e, i) => {
+                                    for (var key in e) {
+                                        console.log(i, key, e[key])
+                                        return (
+                                            <div className={"card-image image-" + i}>
+                                                <img className={"image-"} key={i} src={e[key]} alt={key}></img>
+                                            </div>
+                                        )
+                                    }
+
+                                })
+                            }
+                        </div>
+                    </div>
+                    <div className="card-text-container">
+                        <h3 className="card-title">{Title}</h3>
+
+                        <div className="card-description">
+                            <p>
+                                {Blurb}
+                            </p>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>
