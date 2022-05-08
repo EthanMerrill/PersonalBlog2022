@@ -14,14 +14,11 @@ const Component = (props) => {
 
     return (
         <>
-            <div className={"hover-sensor dynamicTitle dt" + sectionNumber + " sticky " + projects[0]?.Category} onMouseEnter={toggleHover} onMouseLeave={toggleHover}>
-                <div className="inline-block">
                     <h2 id={projects[0]?.Category} className={
-                        "dynamicTitle dt" + sectionNumber + " sticky " + projects[0]?.Category + (hover ? " hover" : "")}>
+                        "dynamicTitle dt" + sectionNumber + " sticky " + projects[0]?.Category + (hover ? " hover" : "")} onMouseLeave={toggleHover} onMouseEnter={toggleHover}>
                         <a href={"#" + projects[0]?.Category}>{projects[0]?.Category}</a>
                     </h2>
-                </div>
-            </div>
+
             <div className='all-cards-container'>
                 {projects?.map(e => {
                     return <Projectcard key={e.id} props={e}></Projectcard>
