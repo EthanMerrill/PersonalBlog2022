@@ -1,4 +1,5 @@
 import './style/style.scss';
+// import Projectcard from './components/Projectcard';
 import Categorysection from './components/Categorysection';
 import { supabase } from './supabaseClient';
 import React, { useEffect, useState } from "react";
@@ -7,8 +8,7 @@ function App() {
 
   const [projects, setProjects] = useState([]);
   const [categories, setCategories] = useState([]);
-  // const [folders, setFolders] = useState(null);
-
+  console.log(process.env.REACT_APP_SUPABASE_URL)
   const getProjects = async () => {
     const resp = await supabase
       .from('Projects')
