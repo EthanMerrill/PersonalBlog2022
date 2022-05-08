@@ -3,6 +3,7 @@ import './style/style.scss';
 import Categorysection from './components/Categorysection';
 import { supabase } from './supabaseClient';
 import React, { useEffect, useState } from "react";
+// https://bestofreactjs.com/repo/rafrex-react-router-hash-link--react-router
 
 function App() {
 
@@ -105,7 +106,7 @@ function App() {
         </div>
         <div className='title-container'>
           <h1 className="intro-title">Hi! I'm Ethan<br></br>
-            Here are some of my projects</h1>
+            Here are some of <br></br>my projects</h1>
         </div>
       </header >
       <div>

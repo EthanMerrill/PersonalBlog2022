@@ -12,8 +12,8 @@ $aur-4: #439bb6bb;
 $title-font-size: 2.5rem;
 $title-font-offset: 50px;
 // animations
-$animate-underline: all 0.2s ease-in-out;
-$animate-fade-in: all 0.2s ease-in-out;
+$animate-underline: all 0.5s ease-in-out;
+$animate-fade-in: all 0.8s ease-in-out;
 $animate-aurora: fly 50s linear alternate;
 
 html {
@@ -43,7 +43,7 @@ header {
     height: 40vh;
     background: #fff;
     position: relative;
-    padding: px;
+    padding: 0px;
     margin: 0px;
     // clip-path: polygon(1 0, 100% 0, 100% 100%, 0 100%);
 
@@ -54,8 +54,9 @@ header {
     overflow: hidden;
     width: 150vw;
     height: 55vh;
-    transform: rotate(-15deg) translateY(-45vh)
-      translateX(-45px);
+    transform: rotate(-15deg) translateY(-15vh)
+      translateX(-80px);
+    transform-origin: 0% 0%;
     background-color: rgba(158, 224, 95, 0.609);
   }
 
@@ -155,7 +156,7 @@ body {
     // width: 100%;
     display: flex;
     flex-direction: column;
-    z-index: -1;
+    z-index: 1;
   }
   a {
     text-decoration: none;
@@ -188,7 +189,7 @@ body {
     font-size: 55px;
     // width: 40vw;
     margin-left: 50px;
-    z-index: 1;
+    // z-index: -1;
     a:after {
       content: "";
       position: absolute;
@@ -206,8 +207,9 @@ body {
     a {
       color: $highlight-color;
       animation: $animate-fade-in;
+      transform: scaleX(.5);
     }:after {
-      transform: scaleX(1);
+      transform: scaleX(.4) translateY(5px);
       transform-origin: bottom left;
     }
   }
