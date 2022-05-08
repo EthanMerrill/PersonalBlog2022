@@ -1,6 +1,8 @@
 /* eslint-disable */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Projectcard from './Projectcard'
+import { HashLink } from 'react-router-hash-link';
+
 
 const Component = (props) => {
     //this component takes all the site data for one category and creates project cards for each project
@@ -11,15 +13,36 @@ const Component = (props) => {
     const [hover, setHover] = useState(false)
     const toggleHover = () => { setHover(!hover) }
     // const [variableName, setVariableName] = useState(null)
+    const myRef = useRef();
+    const observer = new IntersectionObserver((entries, observer) => {
+        const entry = entries[0];
+        if(entry.isIntersecting){
+            setHover(true)
+        }else{
+            setHover(false)
+        }
+    });
+
+    
+
+    useEffect(() => {
+        console.log('myRef', myRef.current);
+        observer.observe(myRef.current);
+        
+    }, []);
 
     return (
         <>
-                    <h2 id={projects[0]?.Category} className={
-                        "dynamicTitle dt" + sectionNumber + " sticky " + projects[0]?.Category + (hover ? " hover" : "")} onMouseLeave={toggleHover} onMouseEnter={toggleHover}>
-                        <a href={"#" + projects[0]?.Category}>{projects[0]?.Category}</a>
-                    </h2>
+            <h2 className={
+                "dynamicTitle dt" + sectionNumber + " sticky " + projects[0]?.Category + (hover ? " hover" : "")} onMouseLeave={toggleHover} onMouseEnter={toggleHover}>
+                <HashLink
+                    smooth to={"#" + projects[0]?.Category}
+                >{projects[0]?.Category}
+                </HashLink>
+                {/* <a href={"#" + projects[0]?.Category}>{projects[0]?.Category}</a> */}
+            </h2>
 
-            <div className='all-cards-container'>
+            <div ref={myRef}  id={projects[0]?.Category} className='all-cards-container'>
                 {projects?.map(e => {
                     return <Projectcard key={e.id} props={e}></Projectcard>
                 })}

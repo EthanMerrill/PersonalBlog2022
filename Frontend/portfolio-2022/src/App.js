@@ -9,7 +9,6 @@ function App() {
 
   const [projects, setProjects] = useState([]);
   const [categories, setCategories] = useState([]);
-  console.log(process.env.REACT_APP_SUPABASE_URL)
   const getProjects = async () => {
     const resp = await supabase
       .from('Projects')

@@ -8,9 +8,7 @@ $aur-1: #373372;
 $aur-2: #43b699;
 $aur-3: #89699e;
 $aur-4: #439bb6bb;
-// fonts
-$title-font-size: 2.5rem;
-$title-font-offset: 50px;
+
 // animations
 $animate-underline: all 0.5s ease-in-out;
 $animate-fade-in: all 0.8s ease-in-out;
@@ -136,7 +134,7 @@ header {
   }
 }
 //title mixin
-@mixin title-classes {
+@mixin title-classes($title-font-offset) {
   // Generate the classes by iterating through the array
   //  $i becomes the index, which we will interpolate for
   //  the class name and the index for each function call
@@ -148,8 +146,7 @@ header {
     }
   }
 }
-// Output the mixin's classes
-@include title-classes;
+
 
 body {
   .projects-container {
@@ -189,7 +186,7 @@ body {
     font-size: 55px;
     // width: 40vw;
     margin-left: 50px;
-    // z-index: -1;
+    z-index: 1;
     a:after {
       content: "";
       position: absolute;
@@ -316,5 +313,35 @@ body {
     min-width: 300px;
     max-width: 400px;
     position: relative;
+  }
+}
+
+$breakpoint-tablet: 768px;
+// desktop specific styles
+@media (min-width: $breakpoint-tablet) {
+  // fonts
+  $title-font-size: 2.5rem;
+  $title-font-offset: 50px;
+  // Output the mixin's classes
+  @include title-classes($title-font-offset: 50px);
+}
+//tablet and smaller styles
+@media (max-width: $breakpoint-tablet) {
+  $title-font-offset: 30px !important;
+  $title-font-size: 30px !important;
+//title mixin
+// Output the mixin's classes
+  @include title-classes($title-font-offset: 30px);
+
+
+  .dynamicTitle {
+    font-size: $title-font-size;
+    background-color: $background-color;
+  }
+
+  .project-card-border {
+    width: 100%;
+    height: auto !important;
+    margin-right:auto !important;
   }
 }
