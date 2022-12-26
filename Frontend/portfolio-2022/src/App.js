@@ -82,7 +82,7 @@ function App() {
   }, [projects])
 
   useEffect(() => {
-    const categories = [...new Set(projects.map(e => e.P_Category))];
+    const categories = [...new Set(projects.map(e => e.Category))];
     setCategories(categories);
   }, [projects])
 
@@ -112,7 +112,7 @@ function App() {
         <div className="projects-container">
           {projects &&
             categories.map((category, i) => {
-              var filteredArticles = projects.filter(e => e.P_Category === category)
+              const filteredArticles = projects.filter(e => e.Category === category)
 
               return <Categorysection key={i} props={[filteredArticles, i]}></Categorysection>
             })

@@ -11,8 +11,12 @@ $aur-4: #439bb6bb;
 
 // animations
 $animate-underline: all 0.5s ease-in-out;
-$animate-fade-in: all 0.8s ease-in-out;
-$animate-aurora: fly 50s linear alternate;
+$animate-fade-in: all 0.3s ease-in-out;
+$animate-aurora: fly 100s linear alternate;
+
+// banner math
+$banner-height: 50vh;
+$banner-angle: tan(35vh/100vw);
 
 html {
   scroll-behavior: smooth;
@@ -28,35 +32,30 @@ body {
   width: 0; /* Remove scrollbar space */
   display: none; /* Optional: just make scrollbar invisible */
 }
-/* Optional: show position indicator in red */
-::-webkit-scrollbar-thumb {
-  // display: none; /* Safari and Chrome */
-  background: #ff0000;
-}
+
 header {
+  width: 1vw;
   .wrapper {
-    overflow-x: clip;
-    overflow: hidden;
     width: 100vw;
-    height: 40vh;
-    background: #fff;
     position: relative;
-    padding: 0px;
-    margin: 0px;
-    // clip-path: polygon(1 0, 100% 0, 100% 100%, 0 100%);
+    display: block;
 
-    // border-radius: 40px;
-  }
-
-  .rotated-wrapper {
-    overflow: hidden;
-    width: 150vw;
-    height: 55vh;
-    transform: rotate(-15deg) translateY(-15vh)
-      translateX(-80px);
-    transform-origin: 0% 0%;
-    background-color: rgba(158, 224, 95, 0.609);
-  }
+    .rotated-wrapper {
+      overflow: hidden;
+      display: block;
+      position: relative;
+      height: $banner-height;
+      background-color: rgba(158, 224, 95, 0.609);
+    }.rotated-wrapper::after {
+        content: "";
+        width: 200%;
+        height: 120%;
+        position: absolute;
+        transform: rotate(-15deg);
+        transform-origin: center center;
+        background-color: rgb(255, 255, 255);
+      }
+    }
 
   .base {
     position: absolute;
@@ -65,42 +64,41 @@ header {
   }
 
   .one {
-    border-radius: 100%;
+    border-radius: 50%;
     width: 50vw;
     height: 50vh;
     background-color: $aur-1;
-    // left: -50px;
-    // top: -30px;
-    z-index: 3;
+    top: -30vh;
+    left: 50vw;
     animation: $animate-aurora;
   }
 
   .two {
+    border-radius: 80%;
     width: 50vw;
     height: 50vh;
     background-color: $aur-2;
-    bottom: -40px;
-    left: 30px;
+    bottom: -10vh;
+    left: 10vw;
     animation: $animate-aurora;
   }
 
   .three {
     border-radius: 100%;
-    width: 50vw;
+    width: 80vw;
     height: 50vh;
-    bottom: -50px;
-    right: 50px;
-    background-color: aur-3;
+    top: -20vh;
+    right: 20vw;
+    background-color: $aur-3;
     animation: $animate-aurora;
   }
 
   .four {
     border-radius: 100%;
     width: 50vw;
-    height: 50vh;
-    bottom: 80px;
-    top: 20px;
-    right: 200px;
+    height: 80vh;
+    top: -20vh;
+    right: 50vw;
     background-color: $aur-4;
     animation: $animate-aurora;
   }
@@ -128,8 +126,8 @@ header {
       font-size: 40px;
     }
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 40px;
+    left: 40px;
     // width: 40%;
   }
 }
@@ -142,11 +140,10 @@ header {
     .dt#{$i} {
       height: 50px;
       top: $title-font-offset * $i;
-      bottom: 125-$i * $title-font-offset;
+      bottom: 180-$i * $title-font-offset;
     }
   }
 }
-
 
 body {
   .projects-container {
@@ -176,7 +173,7 @@ body {
     line-height: 1.5em;
     font-family: "inter";
   }
-  .inline-block{
+  .inline-block {
     display: inline-block;
   }
   .dynamicTitle {
@@ -184,7 +181,7 @@ body {
     font-weight: 700;
     color: $main-text-color;
     font-size: 55px;
-    // width: 40vw;
+    width: fit-content;
     margin-left: 50px;
     z-index: 1;
     a:after {
@@ -204,9 +201,11 @@ body {
     a {
       color: $highlight-color;
       animation: $animate-fade-in;
-      transform: scaleX(.5);
-    }:after {
-      transform: scaleX(.4) translateY(5px);
+      // transform: scaleX(.5);
+      width: 100%;
+    }
+    :after {
+      transform: scaleX(1) translateY(5px);
       transform-origin: bottom left;
     }
   }
@@ -329,10 +328,9 @@ $breakpoint-tablet: 768px;
 @media (max-width: $breakpoint-tablet) {
   $title-font-offset: 30px !important;
   $title-font-size: 30px !important;
-//title mixin
-// Output the mixin's classes
+  //title mixin
+  // Output the mixin's classes
   @include title-classes($title-font-offset: 30px);
-
 
   .dynamicTitle {
     font-size: $title-font-size;
@@ -342,6 +340,6 @@ $breakpoint-tablet: 768px;
   .project-card-border {
     width: 100%;
     height: auto !important;
-    margin-right:auto !important;
+    margin-right: auto !important;
   }
 }
