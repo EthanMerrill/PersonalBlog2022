@@ -34,7 +34,6 @@ body {
 }
 
 header {
-  width: 1vw;
   .wrapper {
     width: 100vw;
     position: relative;
@@ -48,12 +47,13 @@ header {
       background-color: rgba(158, 224, 95, 0.609);
     }.rotated-wrapper::after {
         content: "";
-        width: 200%;
-        height: 120%;
+        width: 300vw;
+        height: 70vh;
         position: absolute;
-        transform: rotate(-15deg);
+        transform: rotate(-15deg) translateY(-80px);
         transform-origin: center center;
         background-color: rgb(255, 255, 255);
+        
       }
     }
 
@@ -334,12 +334,26 @@ $breakpoint-tablet: 768px;
 
   .dynamicTitle {
     font-size: $title-font-size;
-    background-color: $background-color;
+    background-color: white;
   }
 
   .project-card-border {
     width: 100%;
     height: auto !important;
     margin-right: auto !important;
+  }
+
+  .title-container {
+    .intro-title {
+      font-family: inter;
+      font-weight: 600;
+      color: $main-text-color !important;
+      font-size: 40px;
+      text-align: right;
+    }
+    position: absolute;
+    // top: 40px;
+    right: 40px !important;
+    // width: 40%;
   }
 }

@@ -105,7 +105,7 @@ function App() {
         </div>
         <div className='title-container'>
           <h1 className="intro-title">Hi! I'm Ethan<br></br>
-            Here are some of <br></br>my projects</h1>
+            This is what I<br></br> do </h1>
         </div>
       </header >
       <div>
