@@ -1,7 +1,7 @@
 /* eslint-disable */
 import React, { useEffect, useState, useRef } from "react";
 
-const Component = (props) => {
+const ProjectCard = (props) => {
     // destructure props
     // const {propName} = props
     const Blurb = props?.props?.Blurb
@@ -44,7 +44,7 @@ const Component = (props) => {
 
                         <div className="card-description">
                             <p>
-                                {Blurb}
+                                {Blurb.substring(0,300)}{Blurb.length > 300 && "..."}
                             </p>
                         </div>
 
@@ -56,4 +56,4 @@ const Component = (props) => {
     )
 }
 
-export default Component
+export default ProjectCard

@@ -1,10 +1,10 @@
 import './style/style.scss';
 // import Projectcard from './components/Projectcard';
-import Categorysection from './components/Categorysection';
-import { supabase } from './supabaseClient';
+import Categorysection from './components/CategorySection/CategorySection';
+import { supabase } from './api/supabaseClient';
 import React, { useEffect, useState } from "react";
 // https://bestofreactjs.com/repo/rafrex-react-router-hash-link--react-router
-
+import AppHeader from './components/AppHeader/AppHeader';
 function App() {
 
   const [projects, setProjects] = useState([]);
@@ -90,24 +90,7 @@ function App() {
 
   return (
     <div className="app">
-
-      <header className="App-header">
-        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true"></link>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap" rel="stylesheet"></link>
-        <div className="wrapper">
-          <div className="rotated-wrapper">
-            <div className="base one"></div>
-            <div className="base two"></div>
-            <div className="base three"></div>
-            <div className="base four"></div>
-          </div>
-        </div>
-        <div className='title-container'>
-          <h1 className="intro-title">Hi! I'm Ethan<br></br>
-            This is what I<br></br> do </h1>
-        </div>
-      </header >
+      <AppHeader/>
       <div>
         <div className="projects-container">
           {projects &&

@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useEffect, useState, useRef } from "react";
-import Projectcard from './Projectcard'
+import Projectcard from "../ProjectCard/ProjectCard";
 import { HashLink } from 'react-router-hash-link';
 
 
