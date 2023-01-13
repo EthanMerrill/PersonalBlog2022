@@ -92,7 +92,7 @@ function App() {
     <div className="app">
       <AppHeader/>
       <div>
-        <div className="projects-container">
+        <div className="projects-container pt-30">
           {projects &&
             categories.map((category, i) => {
               const filteredArticles = projects.filter(e => e.Category === category)

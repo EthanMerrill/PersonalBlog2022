@@ -1,3 +1,9 @@
+@use "sass:math";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 // Colors
 $main-text-color: hsla(0, 0%, 34%, 1);
 $highlight-color: #bdb604;
@@ -16,7 +22,7 @@ $animate-aurora: fly 100s linear alternate;
 
 // banner math
 $banner-height: 50vh;
-$banner-angle: tan(35vh/100vw);
+$banner-angle: -12deg;
 
 html {
   scroll-behavior: smooth;
@@ -50,7 +56,7 @@ header {
         width: 300vw;
         height: 70vh;
         position: absolute;
-        transform: rotate(-15deg) translateY(-80px);
+        transform: rotate($banner-angle) translateY(-80px);
         transform-origin: center center;
         background-color: rgb(255, 255, 255);
         
@@ -190,8 +196,8 @@ body {
       width: 100%;
       transform: scaleX(0);
       height: 2px;
-      bottom: 0;
-      left: 0;
+      bottom: -10px;
+      left: 0px;
       background-color: #0087ca;
       transform-origin: bottom right;
       transition: transform 0.25s ease-out;

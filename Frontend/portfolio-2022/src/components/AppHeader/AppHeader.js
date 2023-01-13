@@ -15,12 +15,13 @@ const AppHeader = (props) => {
             <div className="base three"></div>
             <div className="base four"></div>
           </div>
+            <SocialLinks className='rotated-wrapper'/>
         </div>
         <div className='title-container'>
-          <h1 className="intro-title">Hi! I'm Ethan<br></br>
-            This is what I<br></br> do </h1>
+          <h1 className="intro-title">Hi! I'm Ethan 👋<br></br>
+            This is what I do </h1>
         </div>
-        <SocialLinks/> 
+         
       </header >
     )
 }
