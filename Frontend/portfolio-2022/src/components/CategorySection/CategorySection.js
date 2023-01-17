@@ -23,12 +23,8 @@ const Component = (props) => {
         }
     });
 
-    
-
     useEffect(() => {
-        console.log('myRef', myRef.current);
         observer.observe(myRef.current);
-        
     }, []);
 
     return (
@@ -39,7 +35,6 @@ const Component = (props) => {
                     smooth to={"#" + projects[0]?.Category}
                 >{projects[0]?.Category}
                 </HashLink>
-                {/* <a href={"#" + projects[0]?.Category}>{projects[0]?.Category}</a> */}
             </h2>
 
             <div ref={myRef}  id={projects[0]?.Category} className='all-cards-container'>

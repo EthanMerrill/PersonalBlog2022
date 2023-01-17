@@ -1,20 +1,22 @@
 /* eslint-disable */
 import React, { useEffect, useState, useRef } from "react";
+import CardButton from "./CardButton";
+import PhotoCarousel from "./PhotoCarousel";
 
 const ProjectCard = (props) => {
     // destructure props
     // const {propName} = props
-    const Blurb = props?.props?.Blurb
-    const Title = props?.props?.Title
-    const Images = props?.props?.ImageURLs
+    const externalLink = props?.props?.External_Link
+    const blurb = props?.props?.Blurb
+    const title = props?.props?.Title
+    const images = props?.props?.ImageURLs
     // other vars
     // const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
     // State Vasriables
 
-    const [showPhotos, setShowPhotos] = useState(false)
     const [hover, setHover] = useState(false)
-    //ref
-    const theRef = useRef();
+    const [showPhotos, setShowPhotos] = useState(false)
+
     // JSX return
     // supabaseUrl+'storage/v1/object/public/project-photos'+/HYC/raceCoach.png
     return (
@@ -22,36 +24,19 @@ const ProjectCard = (props) => {
             <div className="project-card-wrapper">
 
                 <div className={"project-card-border" + ((!hover && !showPhotos) ? "" : " hover")} onMouseDown={() => setShowPhotos(!showPhotos)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-                    <div ref = {theRef} className={showPhotos ? "carousel-container unstacked" : "carousel-container stacked"+((!hover&&!showPhotos) ? "":" hover")} onScroll={() => handleScroll}>
-                        <div className="imc">
-                            {Images &&
-                                Images.map((e, i) => {
-                                    for (var key in e) {
-                                        return (
-                                            <div key = {i} className={"card-image image-" + i}>
-                                                <img className={"image-"} key={i} src={e} alt={key}></img>
-                                                
-                                            </div>
-                                        )
-                                    }
-
-                                })
-                            }
-                        </div>
-                    </div>
+                {images && <PhotoCarousel images={images} hover = {hover} showPhotos= {showPhotos}/>}
                     <div className="card-text-container">
-                        <h3 className="card-title">{Title}</h3>
+                        <h3 className="card-title">{title}</h3>
 
                         <div className="card-description">
                             <p>
-                                {Blurb.substring(0,300)}{Blurb.length > 300 && "..."}
+                                {blurb.substring(0,300)}{blurb.length > 300 && "..."}
                             </p>
                         </div>
-
                     </div>
+                    {externalLink && <CardButton buttonText='Read More' buttonLink={externalLink}/>}
                 </div>
             </div>
-
         </>
     )
 }

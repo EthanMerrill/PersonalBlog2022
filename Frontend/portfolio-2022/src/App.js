@@ -63,15 +63,12 @@ function App() {
             getImageFolderFiles(image.name).then(data => {
               project.ImageURLs = []
               project.ImagesNames = data.filter(e => e.name !== ".emptyFolderPlaceholder").map(e => e.name)
-              console.log(project.ImagesNames)
               // for each image, get the url
               project.ImagesNames.map(e => {
                 getImageUrls(project.Images, e).then(data => {
                   project.ImageURLs.push(data)
-                  
                 })
                 return project
-                // console.log(image.name, data)
               })
             })
           }
@@ -96,11 +93,9 @@ function App() {
           {projects &&
             categories.map((category, i) => {
               const filteredArticles = projects.filter(e => e.Category === category)
-
               return <Categorysection key={i} props={[filteredArticles, i]}></Categorysection>
             })
           }
-          {/* <h2 className='dynamicTitle dt1 sticky'><a href='web'>Web Development</a> </h2> */}
         </div>
       </div>
     </div >
