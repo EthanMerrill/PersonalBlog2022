@@ -37,7 +37,7 @@ const Component = (props) => {
                 </HashLink>
             </h2>
 
-            <div ref={myRef}  id={projects[0]?.Category} className='all-cards-container'>
+            <div ref={myRef}  id={projects[0]?.Category} className=''>
                 {projects?.map(e => {
                     return <Projectcard key={e.id} props={e}></Projectcard>
                 })}

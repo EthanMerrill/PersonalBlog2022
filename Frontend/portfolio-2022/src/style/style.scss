@@ -10,10 +10,14 @@ $highlight-color: #bdb604;
 $background-color: hsla(78, 10%, 99%, 0.9);
 
 //Aurora Colors
-$aur-1: #373372;
-$aur-2: #43b699;
-$aur-3: #89699e;
-$aur-4: #439bb6bb;
+$aur-1: #025b48;
+$aur-2: #1c866c;
+$aur-3: #1c8835;
+$aur-4: #388ba4bb;
+$banner-background-color:hsla(0, 0%, 18%, 0.9);
+
+// title font size
+$title-font-size: 1.5em;
 
 // animations
 $animate-underline: all 0.5s ease-in-out;
@@ -24,7 +28,7 @@ $animate-fade-in: fadeIn .5s ease-in-out;
   100% { opacity: 1; }
 }
 
-$animate-aurora: fly 100s linear alternate;
+$animate-aurora: fly 30s linear alternate;
 
 // banner math
 $banner-height: 50vh;
@@ -56,7 +60,7 @@ header {
       display: block;
       position: relative;
       height: $banner-height;
-      background-color: rgba(158, 224, 95, 0.609);
+      background-color: $banner-background-color;
     }.rotated-wrapper::after {
         content: "";
         width: 300vw;
@@ -96,7 +100,7 @@ header {
   }
 
   .three {
-    border-radius: 100%;
+    border-radius: 90%;
     width: 80vw;
     height: 50vh;
     top: -20vh;
@@ -106,7 +110,7 @@ header {
   }
 
   .four {
-    border-radius: 100%;
+    border-radius: 90%;
     width: 50vw;
     height: 80vh;
     top: -20vh;
@@ -192,7 +196,7 @@ body {
     font-family: inter;
     font-weight: 700;
     color: $main-text-color;
-    font-size: 45px;
+    font-size: $title-font-size;
     width: fit-content;
     margin-left: 50px;
     z-index: 1;
@@ -202,20 +206,20 @@ body {
       width: 100%;
       transform: scaleX(0);
       height: 2px;
-      bottom: -10px;
+      bottom: 10px;
       left: 0px;
-      background-color: #0087ca;
+      background-color: hsl(200, 100%, 40%);
       transform-origin: bottom right;
       transition: transform 0.25s ease-out;
     }
   }
   .dynamicTitle.hover {
     a {
-      color: $highlight-color;
+      // color: $highlight-color;
       transition: color .5s, font-size .5s;
       // transform: scaleX(.5);
       width: 100%;
-      font-size: 55px;
+      font-size: 30px;
     }
     :after {
       transform: scaleX(1) translateY(5px);
@@ -231,26 +235,6 @@ body {
     position: sticky;
   }
 
-  .all-cards-container {
-    // max-width: 80%;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    flex-basis: center;
-  }
-
-  .card-image {
-    border-radius: 20px;
-    height: 200px;
-    width: 200px;
-    // object-fit: fill;
-    img {
-      object-fit: cover;
-      height: 100%;
-      width: 100%;
-      border-radius: 20px;
-    }
-  }
 
   .carousel-container {
     scroll-behavior: smooth;
@@ -286,56 +270,20 @@ body {
     width: 600px;
   }
 
-  .project-card-wrapper {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-
-  .project-card-border {
-    // max-width: 90%;
-    width: 66%;
-    height: 260px;
-    background: hsla(44, 50%, 98%, 0.7);
-    border: 3px solid #575757;
-    box-sizing: border-box;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 25px;
-    padding: 25px;
-    margin-left: auto;
-    margin-right: 25px;
-    position: relative;
-    align-self: flex-end;
-  }
-  project-card-border.hover {
-    background-color: hsla(44, 15%, 100%, 1);
-  }
-  .card-text-container {
-    // width: 66%;
-    min-width: 300px;
-    // max-width: 400px;
-    position: relative;
-  }
-}
 
 $breakpoint-tablet: 768px;
 // desktop specific styles
 @media (min-width: $breakpoint-tablet) {
   // fonts
-  $title-font-size: 2.5rem;
-  $title-font-offset: 50px;
+  $title-font-size: 1.5rem;
+  $title-font-offset: $title-font-size;
   // Output the mixin's classes
   @include title-classes($title-font-offset: 50px);
 }
 //tablet and smaller styles
 @media (max-width: $breakpoint-tablet) {
   $title-font-offset: 30px !important;
-  $title-font-size: 30px !important;
+  $title-font-size: 10px !important;
   //title mixin
   // Output the mixin's classes
   @include title-classes($title-font-offset: 30px);
@@ -364,4 +312,4 @@ $breakpoint-tablet: 768px;
     right: 40px !important;
     // width: 40%;
   }
-}
+}}

@@ -11,24 +11,20 @@ const ProjectCard = (props) => {
     const title = props?.props?.Title
     const images = props?.props?.ImageURLs
     // other vars
-    // const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-    // State Vasriables
-
-    const [hover, setHover] = useState(false)
-    const [showPhotos, setShowPhotos] = useState(false)
-
     // JSX return
     // supabaseUrl+'storage/v1/object/public/project-photos'+/HYC/raceCoach.png
     return (
         <>
-            <div className="project-card-wrapper">
+            <div className="w-full justify-end content-end flex flex-col my-20">
+                <div className=" relative ml-auto mr-[50px] flex content-end sm:flex-wrap sm:justify-center flex-column w-2/3 bg-light-tan rounded-2xl gap-[25px] p-[25px]">
+                {images && 
+                <div className="rounded h-[200px] w-[200px] shrink-0">
+                    <img className="rounded-xl  h-[200px] w-[200px] object-cover" src={images[0]}/>
+                </div>}
+                    <div className="sm: min-w-[200px] shrink">
+                        <h3 className="">{title}</h3>
 
-                <div className={"project-card-border" + ((!hover && !showPhotos) ? "" : " hover")} onMouseDown={() => setShowPhotos(!showPhotos)} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-                {images && <PhotoCarousel images={images} hover = {hover} showPhotos= {showPhotos}/>}
-                    <div className="card-text-container">
-                        <h3 className="card-title">{title}</h3>
-
-                        <div className="card-description">
+                        <div className="pb-10">
                             <p>
                                 {blurb.substring(0,300)}{blurb.length > 300 && "..."}
                             </p>
