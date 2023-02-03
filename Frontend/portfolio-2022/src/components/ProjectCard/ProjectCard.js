@@ -16,7 +16,7 @@ const ProjectCard = (props) => {
     return (
         <>
             <div className="w-full justify-end content-end flex flex-col my-20">
-                <div className=" relative ml-auto mr-[50px] flex content-end sm:flex-wrap sm:justify-center flex-column w-2/3 bg-light-tan rounded-2xl gap-[25px] p-[25px]">
+                <div className=" relative ml-auto mr-[50px] flex content-end sm:flex-wrap sm:justify-center flex-column w-2/3 bg-white rounded-2xl gap-[25px] p-[25px] drop-shadow">
                 {images && 
                 <div className="rounded h-[200px] w-[200px] shrink-0">
                     <img className="rounded-xl  h-[200px] w-[200px] object-cover" src={images[0]}/>

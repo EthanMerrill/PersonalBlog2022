@@ -20,7 +20,7 @@ module.exports = {
       'slate': '#8892b0',
       'light-slate': '#a8b2d1',
       'lightest-slate': '#ccd6f6',
-      'white': '#e6f1ff',
+      'white': '#ffffff',
       'green': '#64ffda',
       'light-tan':'hsla(40, 40%, 97%, 1)',
       'tmbg': 'hsla(44, 50%, 98%, 0.7)'
