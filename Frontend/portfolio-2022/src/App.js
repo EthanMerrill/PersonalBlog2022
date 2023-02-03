@@ -90,12 +90,18 @@ function App() {
       <AppHeader/>
       <div>
         <div className="projects-container pt-30">
-          {projects &&
-            categories.map((category, i) => {
-              const filteredArticles = projects.filter(e => e.Category === category)
-              return <Categorysection key={i} props={[filteredArticles, i]}></Categorysection>
-            })
-          }
+          <Categorysection sectionNumber = {1} title={'About Me'}>
+                <p className='h-[100vh]'>testing</p>
+              </Categorysection>
+          <Categorysection sectionNumber = {2} title={'Experience'}>
+            <p className='h-[100vh]'>testing</p>
+          </Categorysection>
+          <Categorysection sectionNumber = {3} title={'Projects'}>
+            <p className='h-[100vh]'>testing</p>
+          </Categorysection>
+          <Categorysection sectionNumber = {4} title={'Contact'}>
+            <p className='h-[100vh]'>testing</p>
+          </Categorysection>
         </div>
       </div>
     </div >
