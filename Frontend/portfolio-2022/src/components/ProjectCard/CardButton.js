@@ -10,7 +10,7 @@ export default function CardButton(props) {
                 <p className="text-white">
                     {buttonText}
                 </p>
-                <div className="z-3 h-6 w-6 fill-green">
+                <div className="z-3 h-6 w-6 fill-blue-accent">
                 <IconExternal/>
                 </div>
                 </div>
