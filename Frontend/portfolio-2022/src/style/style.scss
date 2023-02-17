@@ -156,7 +156,7 @@ header {
     .dt#{$i} {
       height: 50px;
       top: $title-font-offset * $i;
-      bottom: 180-$i * $title-font-offset;
+      bottom: 200-$i * $title-font-offset;
     }
   }
 }
@@ -227,15 +227,6 @@ body {
     }
   }
 
-  .sticky {
-    position: sticky;
-  }
-  .sticky-bottom {
-    bottom: 0px;
-    position: sticky;
-  }
-
-
   .carousel-container {
     scroll-behavior: smooth;
     // overflow-x: scroll;
@@ -259,17 +250,6 @@ body {
     width: 800px;
     height: 200px;
   }
-  .stacked {
-    height: 200px;
-    width: 200px;
-    // position: relative;
-  }
-
-  .unstacked {
-    height: 200px;
-    width: 600px;
-  }
-
 
 $breakpoint-tablet: 768px;
 // desktop specific styles
@@ -283,7 +263,8 @@ $breakpoint-tablet: 768px;
 //tablet and smaller styles
 @media (max-width: $breakpoint-tablet) {
   $title-font-offset: 30px !important;
-  $title-font-size: 10px !important;
+  $title-font-size: 14px !important;
+  
   //title mixin
   // Output the mixin's classes
   @include title-classes($title-font-offset: 30px);
@@ -291,6 +272,7 @@ $breakpoint-tablet: 768px;
   .dynamicTitle {
     font-size: $title-font-size;
     background-color: white;
+    margin-left:5px !important;
   }
 
   .project-card-border {

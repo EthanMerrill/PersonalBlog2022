@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import SocialLinks from "../SocialLinks/SocialLinks";
 
-const AppHeader = (props) => {
+const AppHeader = () => {
     // JSX return
     return(
         <header className="App-header">
