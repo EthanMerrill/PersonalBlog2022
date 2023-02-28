@@ -28,11 +28,101 @@ $animate-fade-in: fadeIn .5s ease-in-out;
   100% { opacity: 1; }
 }
 
-$animate-aurora: fly 30s linear alternate;
+$animate-aurora: fly 15s linear alternate;
 
 // banner math
 $banner-height: 50vh;
 $banner-angle: -12deg;
+
+
+@function shadow($color) {
+  @return 0 0 45vmax 45vmax #{$color};
+}
+
+@keyframes hueRotate {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes colour-1 {
+  0% {
+    top: 0vh;
+    left: 50vw;
+  }
+  25% {
+    left: 0vw;
+  }
+  50% {
+    top: 100vh;
+  }
+  75% {
+    left: 100vw;
+  }
+  100% {
+    top: 0vh;
+    left: 50vw;
+  }
+}
+
+@keyframes colour-2 {
+  0% {
+    top: 50vh;
+    left: 100vw;
+  }
+  25% {
+    top: 100vh;
+  }
+  50% {
+    left: 0vw;
+  }
+  75% {
+    top: 0vh;
+  }
+  100% {
+    top: 50vh;
+    left: 100vw;
+  }
+}
+
+@keyframes colour-3 {
+  0% {
+    top: 100vh;
+    left: 50vw;
+  }
+  25% {
+    left: 100vw;
+  }
+  50% {
+    top: 0vh;
+  }
+  75% {
+    left: 0vw;
+  }
+  100% {
+    top: 100vh;
+    left: 50vw;
+  }
+}
+
+.one {
+  box-shadow: shadow(purple);
+  animation: hueRotate 10s 0s linear infinite, colour-1 19s 0s linear infinite;
+}
+
+.two {
+  box-shadow: shadow(blue);
+  animation: hueRotate 15s 0s linear infinite, colour-2 25s 0s linear infinite;
+}
+
+.three {
+  box-shadow: shadow(red);
+  animation: hueRotate 20s 0s linear infinite, colour-3 15s 0s linear infinite;
+}
+.four {
+  box-shadow: shadow(green);
+  animation: hueRotate 20s 0s linear infinite, colour-3 15s 0s linear infinite;
+}
 
 html {
   scroll-behavior: smooth;
@@ -77,46 +167,6 @@ header {
     position: absolute;
     filter: blur(50px);
     opacity: 0.6;
-  }
-
-  .one {
-    border-radius: 50%;
-    width: 50vw;
-    height: 50vh;
-    background-color: $aur-1;
-    top: -30vh;
-    left: 50vw;
-    animation: $animate-aurora;
-  }
-
-  .two {
-    border-radius: 80%;
-    width: 50vw;
-    height: 50vh;
-    background-color: $aur-2;
-    bottom: -10vh;
-    left: 10vw;
-    animation: $animate-aurora;
-  }
-
-  .three {
-    border-radius: 90%;
-    width: 80vw;
-    height: 50vh;
-    top: -20vh;
-    right: 20vw;
-    background-color: $aur-3;
-    animation: $animate-aurora;
-  }
-
-  .four {
-    border-radius: 90%;
-    width: 50vw;
-    height: 80vh;
-    top: -20vh;
-    right: 50vw;
-    background-color: $aur-4;
-    animation: $animate-aurora;
   }
 
   @keyframes fly {
