@@ -22,7 +22,7 @@ const ProjectList = () => {
         <div className="flex flex-col justify-center items-center">
             {projects.map((project:any, i) => {
                 return (
-                    <ProjectCard2 key = {i} title={project.title} subTitle={project.subTitle} image={'project.image'} blurb={project.description} extLink={project.extLink}/>
+                    <ProjectCard2 key = {i} title={project.title} subTitle={project.subTitle} image={'project.image'} blurb={project.blurb} extLink={project.extLink}/>
                 )
             })
             }

@@ -161,6 +161,10 @@ header {
   }
 }
 
+.contain-paint{
+  contain:paint;
+}
+
 body {
   .projects-container {
     // width: 100%;

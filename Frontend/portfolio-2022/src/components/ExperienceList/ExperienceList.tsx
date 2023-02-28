@@ -22,7 +22,7 @@ const ExperienceList = () => {
         <div className="flex flex-col justify-center items-center">
             {experiences.map((experience:any, i) => {
                 return (
-                    <ProjectCard2 key = {i} title={experience.title} subTitle={experience.subTitle} image={'project.image'} blurb={experience.description} extLink={experience.extLink}/>
+                    <ProjectCard2 key = {i} title={experience.title} subTitle={experience.subTitle} image={'project.image'} blurb={experience.blurb} extLink={experience.extLink}/>
                 )
             })
             }
