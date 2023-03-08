@@ -2,7 +2,7 @@ import ProjectCard2 from "../ProjectCard2/ProjectCard2"
 import { useEffect, useState } from "react";
 import { collection, getDocs } from 'firebase/firestore';
 import db from '../../api/clientApp'
-
+import { Project } from "../../types/Project";
 const ExperienceList = () => {
     const [experiences, setExperiences] = useState([])
 
@@ -20,9 +20,9 @@ const ExperienceList = () => {
 
     return(
         <div className="flex flex-col justify-center items-center">
-            {experiences.map((experience:any, i) => {
+            {experiences.map((experience:Project, i) => {
                 return (
-                    <ProjectCard2 key = {i} title={experience.title} subTitle={experience.subTitle} image={'project.image'} blurb={experience.blurb} extLink={experience.extLink}/>
+                    <ProjectCard2 key = {i} title={experience.title} subTitle={experience.subTitle} imageLink={experience.imageLink} imageAlt={experience.imageAlt} blurb={experience.blurb} extLink={experience.extLink}/>
                 )
             })
             }

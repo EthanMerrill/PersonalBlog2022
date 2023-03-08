@@ -1,15 +1,14 @@
 import ProjectCard2 from "../ProjectCard2/ProjectCard2"
 import db from '../../api/clientApp'
-import { collection, getDocs} from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { useEffect, useState } from "react";
+import { Project } from "../../types/Project";
 
 const ProjectList = () => {
     const [projects, setProjects] = useState([])
 
     useEffect(() => {
         const getProjects = async () => {
-            // console.log(db)
-            // console.log((doc(db, "/Project")))
             const projectsRef = collection(db, "projects");
             const querySnapshot = await getDocs(projectsRef);
             const temp = querySnapshot.docs.map(doc => doc.data())
@@ -18,11 +17,19 @@ const ProjectList = () => {
         getProjects()
     }, [])
 
-    return(
+    return (
         <div className="flex flex-col justify-center items-center">
-            {projects.map((project:any, i) => {
+            {projects.map((project: Project, i) => {
                 return (
-                    <ProjectCard2 key = {i} title={project.title} subTitle={project.subTitle} image={'project.image'} blurb={project.blurb} extLink={project.extLink}/>
+                    <ProjectCard2 
+                        key={i} 
+                        title={project.title} 
+                        subTitle={project.subTitle} 
+                        imageLink={project.imageLink} 
+                        imageAlt={project.imageAlt} 
+                        blurb={project.blurb} 
+                        extLink={project.extLink} 
+                    />
                 )
             })
             }
