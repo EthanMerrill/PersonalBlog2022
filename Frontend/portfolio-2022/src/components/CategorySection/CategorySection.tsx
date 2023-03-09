@@ -36,7 +36,7 @@ const CategorySection = (props:IcategorySection) => {
     return (
        <>
             <h2 id ={encodeURI(title)} className={
-                "dynamicTitle  rounded-lg sticky dt" + sectionNumber +' animate-fadeSlow'+sectionNumber + (hover ? " hover" : "")} 
+                "dynamicTitle  rounded-lg sticky mt-16 mb-0 dt" + sectionNumber +' animate-fadeSlow'+sectionNumber + (hover ? " hover" : "")} 
                 onMouseLeave={toggleHover} 
                 onMouseEnter={toggleHover}>
                 <HashLink
