@@ -13,13 +13,10 @@ const CategorySection = (props:IcategorySection) => {
     // destructure props
     const { children,title, sectionNumber} = props
 
-    // const projects = props.props[0]
-    // const sectionNumber = props.props[1]
-    // State Variables
     const [hover, setHover] = useState(false)
-    const toggleHover = () => { setHover(!hover) }
-    // const [variableName, setVariableName] = useState(null)
+
     const myRef = useRef() as any;
+    
     const observer = new IntersectionObserver((entries, observer) => {
         const entry = entries[0];
         if(entry.isIntersecting){
@@ -35,16 +32,15 @@ const CategorySection = (props:IcategorySection) => {
 
     return (
        <>
-            <h2 id ={encodeURI(title)} className={
+            <h2 className={
                 "dynamicTitle  rounded-lg sticky mt-16 mb-0 dt" + sectionNumber +' animate-fadeSlow'+sectionNumber + (hover ? " hover" : "")} 
-                onMouseLeave={toggleHover} 
-                onMouseEnter={toggleHover}>
+            >
                 <HashLink
                     smooth to={"#" + encodeURI(title)}
                 >{title}
                 </HashLink>
             </h2>
-                <div ref={myRef} >
+                <div id ={encodeURI(title)} ref={myRef} >
                 {children}
             </div>
             </>
