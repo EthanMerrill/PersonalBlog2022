@@ -1,7 +1,6 @@
 import './style/style.scss';
 // import Projectcard from './components/Projectcard';
 import Categorysection from './components/CategorySection/CategorySection';
-import React, { useEffect, useState } from "react";
 import ProjectCardCorner from './components/ProjectCardCorner/ProjectCardCorner';
 // https://bestofreactjs.com/repo/rafrex-react-router-hash-link--react-router
 import AppHeader from './components/AppHeader/AppHeader';

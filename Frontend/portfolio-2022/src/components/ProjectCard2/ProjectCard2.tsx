@@ -14,11 +14,11 @@ const ProjectCard2 = (props:projectCardProps) => {
     return (
         <>
         <a href={extLink ? extLink : ''} className='w-3/5 mr-36 sm:mr-auto my-6 mx-auto'>
-        <div className="rounded-sm  bg-gray-100 drop-shadow-lg m-0 hover:shadow-lg animate-fade flex flex-row flex-wrap ">
+        <div className="rounded-sm bg-gray-100 drop-shadow-lg m-0 hover:shadow-lg animate-fade flex flex-row flex-wrap ">
             {(imageLink && imageAlt) &&
-                    <img src={imageLink} alt={imageAlt} className=" object-cover w-52 md:w-full md:h-32 md:rounded-t-sm rounded-l-sm" />
+                    <img src={imageLink} alt={imageAlt} className="object-cover w-52 md:w-full md:h-32 md:rounded-t-sm rounded-l-sm flex-shrink-0" />
                 }
-            <div className="flex flex-row p-5 justify-start sm:flex-wrap sm:justify-center sm:pb-5 gap-5">
+            <div className="flex flex-row p-5 justify-start sm:flex-wrap sm:justify-center sm:pb-5 gap-5 flex-shrink flex-grow-0">
                 <div className="flex flex-col text-sm flex-shrink">
                     <div className="flex flex-row flex-wrap text-lg gap-1 sm:text-sm sm:mx-auto md:pb-4">
                         <h4 className="opacity-90 sm:text-sm">{title}</h4>
