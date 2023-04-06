@@ -6,6 +6,7 @@ import ProjectCardCorner from './components/ProjectCardCorner/ProjectCardCorner'
 import AppHeader from './components/AppHeader/AppHeader';
 import ProjectList from './components/ProjectList/ProjectList';
 import ExperienceList from './components/ExperienceList/ExperienceList'
+import { TypeAnimation } from 'react-type-animation';
 
 function App() {
 
@@ -18,8 +19,28 @@ function App() {
           <div className="projects-container pt-30 z-10">
             <Categorysection sectionNumber={1} title={'About Me'}>
               <ProjectCardCorner>
-                <p className="m-auto h-full px-10 leading-8 font-medium text-main-text-gray max-w-[800px]">Hi, I'm Ethan Merrill. I'm a frontend software engineer with technical leadership experience and an entrepreneurial spirit. I hold a Bachelor of Science in Engineering Management from Worcester Polytechnic Institute. Currently based in Washington, D.C. (remote), I have worked as a Senior Consultant at CapTech where I developed frontend applications for a variety of clients. I have also worked as a Web Design and Development Consultant, creating SEO sites for small business owners and non-profits.
-                </p>
+                <TypeAnimation 
+                className="m-auto h-full px-10 leading-8 font-medium text-main-text-gray max-w-[800px]"
+                sequence={[
+                  `Hi, I'm Ethan Merrill!`, // Types 'One'
+                  1000, // Waits 1s
+                  `Hi, I'm Ethan Merrill. I'm a frontend software engineer. I hold a Bachelor of Science in Engineering Management from Worcester Polytechnic Institute.`, // Deletes 'One' and types 'Two'
+                  800, // Waits 2s
+                  `Hi, I'm Ethan Merrill. I'm a frontend software engineer. I hold a Bachelor of Science in Engineering Management from Worcester Polytechnic Institute. Currently based in Washington, D.C. (remote), I have worked as a Senior Consultant at CapTech where I developed frontend applications for a variety of clients.`, // Types 'Three' without deleting 'Two'
+                  800, // 
+                  `Hi, I'm Ethan Merrill. I'm a frontend software engineer. I hold a Bachelor of Science in Engineering Management from Worcester Polytechnic Institute. Currently based in Washington, D.C. (remote), I have worked as a Senior Consultant at CapTech where I developed frontend applications for a variety of clients. I have also worked as a Web Design and Development Consultant, creating SEO sites for small business owners and non-profits.`,
+                  () => {
+                    console.log('Sequence completed'); // Place optional callbacks anywhere in the array
+                  }
+                ]}
+                wrapper="p"
+                cursor={true}
+                repeat={0}
+                speed={75}
+                // style={{ fontSize: '2em', display: 'inline-block' }}
+              />
+                {/* <p className="m-auto h-full px-10 leading-8 font-medium text-main-text-gray max-w-[800px]">Hi, I'm Ethan Merrill. I'm a frontend software engineer with technical leadership experience and an entrepreneurial spirit. I hold a Bachelor of Science in Engineering Management from Worcester Polytechnic Institute. Currently based in Washington, D.C. (remote), I have worked as a Senior Consultant at CapTech where I developed frontend applications for a variety of clients. I have also worked as a Web Design and Development Consultant, creating SEO sites for small business owners and non-profits.
+                </p> */}
               </ProjectCardCorner>
             </Categorysection>
             <Categorysection sectionNumber={2} title={'Experience'}>
