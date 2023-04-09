@@ -29,6 +29,9 @@ module.exports = {
       'light-tan':'hsla(40, 40%, 97%, 1)',
       'light-gray': '#EAEAEA',
       'tmbg': 'hsla(44, 50%, 98%, 0.7)',
+      'notion-green': '#DAECDA',
+      'notion-brown': '#F2E8D9',
+      'notion-gray': '#EAEAEA',
       ...colors
     },
   },
