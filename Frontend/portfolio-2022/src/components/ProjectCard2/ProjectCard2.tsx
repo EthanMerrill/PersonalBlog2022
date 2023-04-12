@@ -21,11 +21,11 @@ const ProjectCard2 = (props:projectCardProps) => {
             <div className="flex flex-row p-5 justify-start sm:flex-wrap sm:justify-center sm:pb-5 gap-5 flex-shrink">
                 <div className="flex flex-col text-sm flex-shrink">
                     <div className="flex flex-row flex-wrap text-lg gap-1 sm:text-sm sm:mx-auto md:pb-4">
-                        <h4 className="opacity-90 sm:text-sm">{title}</h4>
+                        <h4 className="opacity-90 sm:text-sm text-main-text-gray">{title}</h4>
                         <h4 className="text-blue-accent md:hidden">|</h4>
-                        <p className="opacity-80 sm:text-sm">{subTitle}</p>
+                        <p className="opacity-80 sm:text-sm text-main-text-gray">{subTitle}</p>
                     </div>
-                    <div className={clsx("text-sm opacity-80 mt-2 text-left", extLink && "pb-8")}>{blurb}</div>
+                    <div className={clsx("text-sm text-main-text-gray opacity-80 mt-2 text-left", extLink && "pb-8")}>{blurb}</div>
                 </div>
                 {extLink && 
                     <a href={extLink}>

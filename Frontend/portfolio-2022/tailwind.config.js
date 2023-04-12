@@ -16,7 +16,7 @@ module.exports = {
     colors: {
       transparent: 'transparent',
       current: 'currentColor',
-      'main-text-gray': 'hsla(0, 0%, 34%, 1)',
+      'main-text-gray': 'hsla(0, 0%, 20%, 1)',
       'navy': '#0a192f',
       'blue-accent': ' hsl(200, 100%, 40%)',
       'light-navy': '#112240',
