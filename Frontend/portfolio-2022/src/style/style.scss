@@ -334,7 +334,7 @@ $breakpoint-tablet: 768px;
   $title-font-size: 1.5rem;
   $title-font-offset: $title-font-size;
   // Output the mixin's classes
-  @include title-classes($title-font-offset: 50px);
+  // @include title-classes($title-font-offset: 50px);
 }
 //tablet and smaller styles
 @media (max-width: $breakpoint-tablet) {
@@ -343,12 +343,14 @@ $breakpoint-tablet: 768px;
   
   //title mixin
   // Output the mixin's classes
-  @include title-classes($title-font-offset: 30px);
+  // @include title-classes($title-font-offset: 30px);
 
   .dynamicTitle {
     font-size: $title-font-size;
     background-color: white;
     margin-left:5px !important;
+    position: relative;
+    
   }
 
   .project-card-border {

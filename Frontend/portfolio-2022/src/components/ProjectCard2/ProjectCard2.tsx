@@ -13,7 +13,7 @@ const ProjectCard2 = (props:projectCardProps) => {
     const {title, subTitle, imageAlt, imageLink, blurb, extLink} = props
     return (
         <>
-        <a href={extLink ? extLink : ''} className='w-3/5 mr-36 sm:mr-auto my-6 mx-auto'>
+        <a href={extLink ? extLink : ''} className='w-3/5 sm:w-4/5 mr-36 sm:mr-auto my-6 mx-auto'>
         <div className="rounded-sm bg-gray-100 drop-shadow-lg m-0 hover:shadow-lg transition-shadow animate-fade flex flex-row md:flex-wrap ">
             {(imageLink && imageAlt) &&
                     <img src={imageLink} alt={imageAlt} className="object-cover w-52 md:w-full md:h-32 md:rounded-t-sm rounded-l-sm flex-shrink-0" />

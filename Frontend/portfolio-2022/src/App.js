@@ -7,8 +7,21 @@ import AppHeader from './components/AppHeader/AppHeader';
 import ProjectList from './components/ProjectList/ProjectList';
 import ExperienceList from './components/ExperienceList/ExperienceList'
 import { TypeAnimation } from 'react-type-animation';
+import React from 'react';
 
 export default function App() {
+  const [width, setWidth] = React.useState(window.innerWidth);
+  const breakpoint = 700;
+  React.useEffect(() => {
+   const handleResizeWindow = () => setWidth(window.innerWidth);
+    // subscribe to window resize event "onComponentDidMount"
+    window.addEventListener("resize", handleResizeWindow);
+    return () => {
+      // unsubscribe "onComponentDestroy"
+      window.removeEventListener("resize", handleResizeWindow);
+    };
+  }, []);
+
 
   return (
     <body>
@@ -19,6 +32,21 @@ export default function App() {
           <div className="projects-container pt-30 z-10">
             <Categorysection sectionNumber={1} title={'About Me'}>
               <ProjectCardCorner>
+                { breakpoint > width ? <TypeAnimation
+                  className="m-auto h-[100px] px-10 leading-8 font-medium text-main-text-gray max-w-[800px]"
+                  sequence={[
+                    `Hi, I'm Ethan Merrill!`,
+                    800, 
+                    `Hi, I'm Ethan Merrill. I like to build things`,
+                    10,
+                    `Hi, I'm Ethan Merrill. I like to build things. Check out some of my projects below!`,
+                  ]}
+                  wrapper="p"
+                  cursor={true}
+                  repeat={0}
+                  speed={75}
+                // style={{ fontSize: '2em', display: 'inline-block' }}
+                /> :
                 <TypeAnimation
                   className="m-auto h-full px-10 leading-8 font-medium text-main-text-gray max-w-[800px]"
                   sequence={[
@@ -37,6 +65,7 @@ export default function App() {
                   speed={75}
                 // style={{ fontSize: '2em', display: 'inline-block' }}
                 />
+}
               </ProjectCardCorner>
             </Categorysection>
             <Categorysection sectionNumber={2} title={'Experience'}>
@@ -46,13 +75,13 @@ export default function App() {
               <ProjectList />
             </Categorysection>
             <ProjectCardCorner title='Ideas List'>
-              <div  className='mt-8 flex flex-col justify-center'>
-                <div className='flex'>
-                  <div className='basis-2/3 py-3 text-main-text-gray'>
+              <div  className='mt-8 mx-8 flex flex-col justify-center'>
+                <div className='flex flex-wrap'>
+                  <div className='basis-2/3 sm:basis-full py-3 text-main-text-gray'>
                     Everyone has ideas. The key is in the execution. To keep track and hold myself accountable, I keep a list of ideas for projects which I think would be interesting, fun, and maybe even profitable. Ideas are marked as <span className='inline rounded-full px-2 bg-notion-green'>Live</span>, <span className='inline rounded-full px-2 bg-notion-brown'>Abandoned</span>, or <span className='inline rounded-full px-2 bg-notion-gray'> Not Started</span>. 
                     <br/> <br/> If you're interested in collaborating on any of these projects, please reach out!
                   </div>
-                  <div className='basis-1/3 my-auto'>
+                  <div className='basis-1/3 sm:basis-full my-auto'>
                     <a href="https://observant-book-583.notion.site/0013220bce5a49c08a1c8b49b9983c94?v=1b7fd37991bc4c63a0295d05c47c2d94"><div className='hover:bg-blue-accent hover:text-white solid border-[1.5px] rounded border-white w-40 mx-auto my-auto text-main-text-gray text-center p-2'>View Ideas List →</div></a>
                   </div>
 
