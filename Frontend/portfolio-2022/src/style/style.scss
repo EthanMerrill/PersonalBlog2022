@@ -138,7 +138,7 @@ html:before {
   z-index: -1;
 }
 
-body {
+.main-body {
   // background-color: $background-color;
   margin: 0px;
   background-color: #fff;
@@ -334,7 +334,7 @@ $breakpoint-tablet: 768px;
   $title-font-size: 1.5rem;
   $title-font-offset: $title-font-size;
   // Output the mixin's classes
-  // @include title-classes($title-font-offset: 50px);
+  @include title-classes($title-font-offset: 50px); // the magic that makes the font stick to the bottom/top
 }
 //tablet and smaller styles
 @media (max-width: $breakpoint-tablet) {
@@ -343,7 +343,7 @@ $breakpoint-tablet: 768px;
   
   //title mixin
   // Output the mixin's classes
-  // @include title-classes($title-font-offset: 30px);
+  // @include title-classes($title-font-offset: 30px); // the magic that makes the font stick to the bottom/top
 
   .dynamicTitle {
     font-size: $title-font-size;
@@ -352,6 +352,8 @@ $breakpoint-tablet: 768px;
     position: relative;
     
   }
+
+
 
   .project-card-border {
     width: 100%;
