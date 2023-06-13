@@ -17,7 +17,7 @@ const AppHeader = () => {
             <SocialLinks className='rotated-wrapper'/>
         </div>
         <div className='title-container'>
-          <h1 className="intro-title">Hi! I'm Ethan 👋<br></br>
+          <h1 className="intro-title">Hi! I'm Ethan<br></br>
             This is what I do </h1>
         </div>
          

@@ -31,7 +31,7 @@ $animate-fade-in: fadeIn .5s ease-in-out;
 $animate-aurora: fly 15s linear alternate;
 
 // banner math
-$banner-height: 50vh;
+$banner-height: 35vh;
 $banner-angle: -12deg;
 
 
@@ -205,6 +205,7 @@ header {
       font-weight: 600;
       color: #fff;
       font-size: 40px;
+      mix-blend-mode: difference;
     }
     position: absolute;
     top: 40px;
