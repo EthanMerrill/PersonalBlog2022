@@ -6,4 +6,5 @@ export type Project = {
     extLink?: string;
     imageLink?: string;
     imageAlt?: string;
+    startDate?: Date;
 }

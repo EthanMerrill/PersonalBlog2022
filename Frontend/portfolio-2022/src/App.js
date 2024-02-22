@@ -1,13 +1,11 @@
 import './style/style.scss';
-// import Projectcard from './components/Projectcard';
 import Categorysection from './components/CategorySection/CategorySection';
 import ProjectCardCorner from './components/ProjectCardCorner/ProjectCardCorner';
 // https://bestofreactjs.com/repo/rafrex-react-router-hash-link--react-router
 import AppHeader from './components/AppHeader/AppHeader';
-import ProjectList from './components/ProjectList/ProjectList';
-import ExperienceList from './components/ExperienceList/ExperienceList'
 import { TypeAnimation } from 'react-type-animation';
 import React from 'react';
+import ItemsList from './components/ItemsList/ItemsList';
 
 export default function App() {
   const [width, setWidth] = React.useState(window.innerWidth);
@@ -69,10 +67,10 @@ export default function App() {
               </ProjectCardCorner>
             </Categorysection>
             <Categorysection sectionNumber={2} title={'Experience'}>
-              <ExperienceList />
+            <ItemsList Projects = {true} />
             </Categorysection>
             <Categorysection sectionNumber={3} title={'Projects'}>
-              <ProjectList />
+            <ItemsList Projects = {false} />
             </Categorysection>
             <ProjectCardCorner title='Ideas List'>
               <div  className='mt-8 mx-8 flex flex-col justify-center'>
