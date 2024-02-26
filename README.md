@@ -23,3 +23,4 @@ This is a portfolio project undertaken to showcase my work and web development e
 - [ ] site loading animation
 - [ ] add resume
 - [ ] modify headers to change size on scroll position
+- [ ] add chatgpt assistant that pretends to be me !

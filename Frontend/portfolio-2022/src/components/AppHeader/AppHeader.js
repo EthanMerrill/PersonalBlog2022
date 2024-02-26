@@ -14,7 +14,7 @@ const AppHeader = () => {
             <div className="base three"></div>
             <div className="base four"></div>
           </div>
-            <SocialLinks className='rotated-wrapper'/>
+        <div className="diagonal-mask"></div>  
         </div>
         <div className='title-container'>
           <h1 className="intro-title">Hi! I'm Ethan<br></br>

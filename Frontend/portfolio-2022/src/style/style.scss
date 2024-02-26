@@ -31,8 +31,8 @@ $animate-fade-in: fadeIn .5s ease-in-out;
 $animate-aurora: fly 15s linear alternate;
 
 // banner math
-$banner-height: 35vh;
-$banner-angle: -12deg;
+$banner-height: 25vh;
+$banner-angle: 10deg;
 
 
 @function shadow($color) {
@@ -157,25 +157,31 @@ header {
     position: relative;
     display: block;
     overflow-y: visible;
-    top:-50px;
 
     .rotated-wrapper {
       overflow: hidden;
       // overflow-y: visible;
       display: block;
       position: relative;
-      height: $banner-height;
-      background-color: $banner-background-color;
-    }.rotated-wrapper::after {
-        content: "";
-        width: 300vw;
-        height: 60vh;
-        position: absolute;
-        transform: rotate($banner-angle) translateY(-80px);
-        transform-origin: center center;
-        background-color: rgb(255, 255, 255);
+      height: $banner-height;}
+      // background-color: $banner-background-color;
+    // }.rotated-wrapper::after {
+    //     content: "";
+    //     width: 300vw;
+    //     height: 50vh;
+    //     position: absolute;
+    //     transform: rotate($banner-angle) translateY(45vh);
+    //     transform-origin: center center;
+    //     background-color: rgb(255, 255, 255);
         
-      }
+    //   }
+    }
+    .diagonal-mask{
+    height: 100%;
+    position: absolute;
+    top:0;
+    width: 100%;
+    background: linear-gradient(to bottom right, transparent 50%, white 50%);
     }
 
   .base {

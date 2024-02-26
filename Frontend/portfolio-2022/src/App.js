@@ -6,6 +6,7 @@ import AppHeader from './components/AppHeader/AppHeader';
 import { TypeAnimation } from 'react-type-animation';
 import React from 'react';
 import ItemsList from './components/ItemsList/ItemsList';
+import SocialLinks from './components/SocialLinks/SocialLinks';
 
 export default function App() {
   const [width, setWidth] = React.useState(window.innerWidth);
@@ -26,9 +27,10 @@ export default function App() {
       <div className='easter-egg absolute top-[-10px]'><p className=' z-10 relative text-white'>Hello again!</p></div>
       <div className="app z-10 relative">
         <AppHeader />
+        <SocialLinks className='rotated-wrapper'/>
         <div>
           <div className="projects-container pt-30 z-10">
-            <Categorysection sectionNumber={1} title={'About Me'}>
+            <Categorysection sectionNumber={1} title={'About Me'} className='-mt-4'>
               <ProjectCardCorner>
                 { breakpoint > width ? <TypeAnimation
                   className="m-auto h-[100px] px-10 leading-8 font-medium text-main-text-gray max-w-[800px]"
