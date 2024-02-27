@@ -7,7 +7,7 @@
 // Colors
 $main-text-color: hsla(0, 0%, 34%, 1);
 $highlight-color: #bdb604;
-$background-color: hsla(78, 10%, 99%, 0.9);
+$background-color: hsla(60, 20%, 71%, 0.9);
 
 //Aurora Colors
 $aur-1: #025b48;
@@ -157,32 +157,26 @@ header {
     position: relative;
     display: block;
     overflow-y: visible;
+    background-color: $banner-background-color;
+    
 
     .rotated-wrapper {
       overflow: hidden;
       // overflow-y: visible;
       display: block;
       position: relative;
-      height: $banner-height;}
-      // background-color: $banner-background-color;
-    // }.rotated-wrapper::after {
-    //     content: "";
-    //     width: 300vw;
-    //     height: 50vh;
-    //     position: absolute;
-    //     transform: rotate($banner-angle) translateY(45vh);
-    //     transform-origin: center center;
-    //     background-color: rgb(255, 255, 255);
-        
-    //   }
+      height: $banner-height;
+      margin-bottom: -8vh;
     }
+
     .diagonal-mask{
     height: 100%;
     position: absolute;
     top:0;
     width: 100%;
-    background: linear-gradient(to bottom right, transparent 50%, white 50%);
+    background: linear-gradient(to bottom left, transparent 50%, white 50%);
     }
+  }
 
   .base {
     position: absolute;
@@ -212,11 +206,12 @@ header {
       color: #fff;
       font-size: 40px;
       mix-blend-mode: difference;
+      
     }
     position: absolute;
     top: 40px;
-    left: 40px;
-    // width: 40%;
+    right: 40px;
+    text-align: right;    
   }
 }
 //title mixin
@@ -371,14 +366,8 @@ $breakpoint-tablet: 768px;
   .title-container {
     .intro-title {
       font-family: inter;
-      font-weight: 600;
-      color: $main-text-color !important;
-      font-size: 40px;
-      text-align: right;
+      font-weight: 800;
+      font-size: 30px;
     }
-    position: absolute;
-    // top: 40px;
-    right: 40px !important;
-    // width: 40%;
   }
 }}

@@ -15,11 +15,9 @@ const ItemsList = (Projects:boolean) => {
             const querySnapshot = await getDocs(projectsRef);
             const temp = querySnapshot.docs.map(doc => doc.data())
             // re-order the projects by the startDate field if it exists
-            console.log(temp)
             temp.sort((a: DocumentData, b: DocumentData) => {
                     return b.startDate.seconds - a.startDate.seconds;
             });
-            console.log(temp)
             setItems(temp as []);
         }
         getExperiences()
