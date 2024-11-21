@@ -27,7 +27,7 @@ const ItemsList = (Projects:boolean) => {
         <div className="flex flex-col justify-center items-center">
             {items.map((experience: Project, i) => {
                 return (
-                    <ProjectCard2 key={i} title={experience.title} subTitle={experience.subTitle} imageLink={experience.imageLink} imageAlt={experience.imageAlt} blurb={experience.blurb} extLink={experience.extLink} />
+                    <ProjectCard2 key={i} title={experience.title} subTitle={experience.subTitle} imageLink={experience.imageLink} imageAlt={experience.imageAlt} blurb={experience.blurb} extLink={experience.extLink} startDate={experience.startDate}/>
                 )
             })
             }
