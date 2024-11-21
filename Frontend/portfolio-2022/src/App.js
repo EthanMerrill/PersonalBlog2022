@@ -6,7 +6,7 @@ import AppHeader from './components/AppHeader/AppHeader';
 import React from 'react';
 import ItemsList from './components/ItemsList/ItemsList';
 import SocialLinks from './components/SocialLinks/SocialLinks';
-import AboutMeSection from './components/AboutMeSection/AboutMeSection';
+// import AboutMeSection from './components/AboutMeSection/AboutMeSection';
 
 export default function App() {
   const [width, setWidth] = React.useState(window.innerWidth);
