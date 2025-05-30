@@ -1,27 +1,35 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ChatMessage from '../ChatMessage/ChatMessage';
-import { Message } from '../../types/Message';
+import { ChatMessageProps } from '../ChatMessage/ChatMessage';
+interface AboutMeProps {
+    width?: number;
+    breakpoint?: number;
+}
 
-const AboutMe: React.FC = () => {
+const AboutMe: React.FC<AboutMeProps> = () => {
 
     // introductory set of messages to be used
-    const initialMessages: Message[] = [
-        { content: "Hi! I'm a software engineer based in Boston. I'm currently working at a company called CapTech. I'm passionate about web development, and I'm always looking for new opportunities to learn and grow.", timestamp: Date.now(), user:false },
-        { content: "I'm also a big fan of open source software, and I've contributed to a few projects in my free time. I'm always looking for new projects to get involved with, so if you have any ideas, feel free to reach out!", timestamp: Date.now(), user:false },
-        { content: "I'm currently working on a few personal projects, including this website. I'm using it as a platform to showcase my work and share my thoughts on various topics. I'm also planning to add a blog section in the future, so stay tuned for that!", timestamp: Date.now(), user:false },
-        { content: "I'm always open to new opportunities, so if you're interested in working with me, feel free to get in touch. I'm always happy to chat and see how we can work together.", timestamp: Date.now(), user:false },
+    const initialMessages: ChatMessageProps[] = [
+        { message: "Hi! I'm a software engineer based in Boston. I'm currently working CapTech Consulting. I'm passionate about web development, and am always looking for new opportunities to learn and grow.", author: "Ethan's Assistant", timestamp: Date.now(), user: false },
+        { message: "I'm currently working on a few personal projects, including this website. I'm using it as a platform to showcase my work and share my thoughts on various topics.", author: "Ethan's Assistant", timestamp: Date.now(), user: false },
+        { message: "If you have any questions you can ask them here, or drop me a line directly!", author: "Ethan's Assistant", timestamp: Date.now(), user: false },
     ];
 
     // The about me section is going to be this chat app. It will contain all the state and logic to handle the chat
-    const [chatMessages, setChatMessages] = useState<Message[]>([]);
-    const [messageQueue, setMessageQueue] = useState<Message[]>([...initialMessages]);
+    const [chatMessages, setChatMessages] = useState<ChatMessageProps[]>([]);
+    const [messageQueue, setMessageQueue] = useState<ChatMessageProps[]>([...initialMessages]);
     const [input, setInput] = useState("");
     const [completed, setCompleted] = useState(true);
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     // event handler to handle submitting a new message
     const handleSubmit = () => {
-        setChatMessages([...chatMessages, { content: input, timestamp: Date.now(), user:true}]);
+        setChatMessages([...chatMessages, {
+            message: input,
+            timestamp: Date.now(),
+            user: true,
+            author: "You"
+        }]);
         setInput("");
     };
 
@@ -45,14 +53,14 @@ const AboutMe: React.FC = () => {
         console.log(chatMessages)
         // if there is a message in the queue and the current message has completed typing, display the next message
         if (messageQueue.length > 0 && completed) {
-                // create a copy of the messageQueue array
-                const updatedMessageQueue = [...messageQueue];
-                // add the first message from the queue to the list of displayed messages
-                setChatMessages([...chatMessages, updatedMessageQueue[0]]);
-                // remove the first message from the queue and update the messageQueue state
-                console.log("Updated Messages:", updatedMessageQueue.slice(1))
-                setMessageQueue(updatedMessageQueue.slice(1));
-                setCompleted(false);
+            // create a copy of the messageQueue array
+            const updatedMessageQueue = [...messageQueue];
+            // add the first message from the queue to the list of displayed messages
+            setChatMessages([...chatMessages, updatedMessageQueue[0]]);
+            // remove the first message from the queue and update the messageQueue state
+            console.log("Updated Messages:", updatedMessageQueue.slice(1))
+            setMessageQueue(updatedMessageQueue.slice(1));
+            setCompleted(false);
         }
     }, [chatMessages, messageQueue, completed, setCompleted]);
 
@@ -60,14 +68,21 @@ const AboutMe: React.FC = () => {
         <div className="flex flex-col h-96 mb-10 mx-auto px-10 max-w-6xl">
             <div className="flex-grow rounded-t-lg">
                 {/* Chat messages */}
-                
+
                 <div ref={chatContainerRef} className="flex flex-col justify-end overflow-scroll h-96">
-                    
+
                     {chatMessages.map((message, i) => (
-                        <ChatMessage key={i} message={message.content} user={message.user} completed={setCompleted}/>
+                        <ChatMessage
+                            key={i}
+                            message={message.message}
+                            user={message.user}
+                            author={message.author}
+                            timestamp={message.timestamp}
+                            completed={setCompleted}
+                        />
                     ))}
-                    </div>
-       
+                </div>
+
             </div>
             <div className=" rounded-b-lg">
                 {/* Chat input */}

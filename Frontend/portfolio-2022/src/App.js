@@ -6,7 +6,7 @@ import AppHeader from './components/AppHeader/AppHeader';
 import React from 'react';
 import ItemsList from './components/ItemsList/ItemsList';
 import SocialLinks from './components/SocialLinks/SocialLinks';
-// import AboutMeSection from './components/AboutMeSection/AboutMeSection';
+import AboutMeSection from './components/AboutMeSection/AboutMeSection';
 
 export default function App() {
   const [width, setWidth] = React.useState(window.innerWidth);
@@ -30,9 +30,9 @@ export default function App() {
         <SocialLinks className='rotated-wrapper' />
         <div>
           <div className="projects-container pt-30 z-10">
-            {/* <Categorysection sectionNumber={1} title={'About Me'}>
-            <AboutMeSection width={width} breakpoint={breakpoint} />
-            </Categorysection> */}
+            <Categorysection sectionNumber={1} title={'About Me'}>
+              <AboutMeSection width={width} breakpoint={breakpoint} />
+            </Categorysection>
             <Categorysection sectionNumber={2} title={'Experience'}>
               <ItemsList Projects={true} />
             </Categorysection>
