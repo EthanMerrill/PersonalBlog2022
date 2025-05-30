@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import ChatMessage from '../ChatMessage/ChatMessage';
-import { ChatMessageProps } from '../ChatMessage/ChatMessage';
-interface AboutMeProps {
+import ChatMessage, { ChatMessageProps } from '../ChatMessage/ChatMessage';
+
+interface AboutMeSectionProps {
     width?: number;
     breakpoint?: number;
 }
 
-const AboutMe: React.FC<AboutMeProps> = () => {
+const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 
     // introductory set of messages to be used
     const initialMessages: ChatMessageProps[] = [
@@ -104,4 +104,4 @@ const AboutMe: React.FC<AboutMeProps> = () => {
     );
 };
 
-export default AboutMe;
+export default AboutMeSection;
