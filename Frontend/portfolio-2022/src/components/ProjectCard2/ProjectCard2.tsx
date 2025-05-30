@@ -12,6 +12,16 @@ interface ProjectCardProps {
     startDate?: Date;
 }
 
+interface ProjectCardProps {
+    title: string;
+    subTitle: string;
+    blurb?: string;
+    extLink?: string;
+    imageLink?: string;
+    imageAlt?: string;
+    startDate?: Date;
+}
+
 const ProjectCard2: React.FC<ProjectCardProps> = (props) => {
     const { title, subTitle, imageAlt, imageLink, blurb, extLink, startDate } = props;
 

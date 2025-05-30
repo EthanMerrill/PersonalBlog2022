@@ -1,4 +1,4 @@
-interface Timestamp {
+export interface Timestamp {
     seconds: number;
     nanoseconds: number;
 }
