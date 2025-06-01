@@ -1,0 +1,206 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, staging]
+    paths: ["backend/**"]
+  pull_request:
+    branches: [main]
+    paths: ["backend/**"]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: secrets-service-staging
+
+jobs:
+  test:
+    name: Test Go Application
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build application
+        run: go build -o bin/secrets-service .
+
+      - name: Run security checks
+        run: |
+          # Install gosec
+          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+
+          # Run security scan
+          gosec ./...
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to staging
+        run: |
+          aws cloudformation deploy \
+            --template-file cloudformation-template-docker.yaml \
+            --stack-name ${{ env.STACK_NAME }} \
+            --parameter-overrides \
+              KeyPairName="${{ secrets.AWS_KEY_PAIR_NAME }}" \
+              JWTSecret="${{ secrets.JWT_SECRET_STAGING }}" \
+              AuthUsername="${{ secrets.AUTH_USERNAME_STAGING }}" \
+              AuthPassword="${{ secrets.AUTH_PASSWORD_STAGING }}" \
+              AllowedOrigins="${{ secrets.ALLOWED_ORIGINS_STAGING }}" \
+              OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
+              FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
+              GitHubRepo="https://github.com/${{ github.repository }}.git" \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ env.AWS_REGION }} \
+            --no-fail-on-empty-changeset
+
+      - name: Get staging outputs
+        id: outputs
+        run: |
+          PUBLIC_IP=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`PublicIP`].OutputValue' \
+            --output text)
+
+          APPLICATION_URL=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApplicationURL`].OutputValue' \
+            --output text)
+
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "application_url=$APPLICATION_URL" >> $GITHUB_OUTPUT
+
+      - name: Wait for staging application
+        run: |
+          echo "Waiting for staging application at ${{ steps.outputs.outputs.application_url }}/health"
+          for i in {1..30}; do
+            if curl -f -s "${{ steps.outputs.outputs.application_url }}/health" >/dev/null 2>&1; then
+              echo "✅ Staging application is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Staging application failed to respond"
+              exit 1
+            fi
+            echo "⏳ Attempt $i/30 - waiting 10 seconds..."
+            sleep 10
+          done
+
+      - name: Run integration tests
+        run: |
+          BASE_URL="${{ steps.outputs.outputs.application_url }}"
+
+          echo "Running integration tests against: $BASE_URL"
+
+          # Test health endpoint
+          HEALTH_RESPONSE=$(curl -s "$BASE_URL/health")
+          echo "Health check: $HEALTH_RESPONSE"
+
+          # Test that protected endpoints return 401 without auth
+          AUTH_TEST=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/keys/openai")
+          if [ "$AUTH_TEST" != "401" ]; then
+            echo "❌ Authentication test failed - expected 401, got $AUTH_TEST"
+            exit 1
+          fi
+          echo "✅ Authentication test passed"
+
+          # Test CORS headers
+          CORS_TEST=$(curl -s -I -H "Origin: https://ethanmerrill.com" "$BASE_URL/health" | grep -i "access-control-allow-origin" || true)
+          if [ -n "$CORS_TEST" ]; then
+            echo "✅ CORS test passed: $CORS_TEST"
+          else
+            echo "⚠️  CORS headers not found (might be expected)"
+          fi
+
+      - name: Create staging summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # 🧪 Staging Deployment Successful!
+
+          ## 📋 Staging Details
+          - **Stack Name**: \`${{ env.STACK_NAME }}\`
+          - **Public IP**: \`${{ steps.outputs.outputs.public_ip }}\`
+          - **Branch**: \`${{ github.ref_name }}\`
+          - **Commit**: \`${{ github.sha }}\`
+
+          ## 🔗 Staging URLs
+          - **Application**: [${{ steps.outputs.outputs.application_url }}](${{ steps.outputs.outputs.application_url }})
+          - **Health Check**: [${{ steps.outputs.outputs.application_url }}/health](${{ steps.outputs.outputs.application_url }}/health)
+
+          ## ✅ Tests Passed
+          - Go unit tests
+          - Security scan (gosec)
+          - Integration tests
+          - Health check verification
+
+          ## 🚀 Ready for Production
+          This staging deployment can be promoted to production by merging to main branch.
+          EOF
+
+  cleanup-on-pr:
+    name: Cleanup Staging (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Delete staging stack
+        run: |
+          echo "Cleaning up staging environment for closed PR..."
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            aws cloudformation delete-stack \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }}
+            echo "✅ Staging stack deletion initiated"
+          else
+            echo "ℹ️  No staging stack found to delete"
+          fi
