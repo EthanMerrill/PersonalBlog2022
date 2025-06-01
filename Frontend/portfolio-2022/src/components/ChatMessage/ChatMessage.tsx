@@ -31,8 +31,8 @@ const ChatMessage = (props: ChatMessageProps) => (
                 </div>
             </div>
             <div className="flex items-center mt-1 pl-1">
-                <div className="chat-message-author text-xs text-slate opacity-80 mr-2">{props.author}</div>
-                <div className="chat-message-timestamp text-xs text-slate opacity-60">{props.timestamp ? new Date(props.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                <div className="chat-message-author text-xxs text-slate opacity-50 mr-2">{props.author}</div>
+                <div className="chat-message-timestamp text-xxs text-slate opacity-30">{props.timestamp ? new Date(props.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
             </div>
         </div>
     ) : (

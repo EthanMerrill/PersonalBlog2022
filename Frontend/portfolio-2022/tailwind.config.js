@@ -62,6 +62,9 @@ module.exports = {
       'display': ['Oswald'],
       'body': ['"Open Sans"'],
     },
+    fontSize: {
+      "xxs": '0.65rem'
+    },
     animation: {
       fade: 'fadeIn 1s ease-in-out',
       fadeSlow1: 'fadeIn 2s ease-in-out',
