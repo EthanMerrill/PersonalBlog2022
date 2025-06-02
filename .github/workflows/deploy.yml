@@ -62,16 +62,48 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Check if stack exists
+      - name: Check stack status
         id: check-stack
         run: |
           if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            STACK_STATUS=$(aws cloudformation describe-stacks \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].StackStatus' \
+              --output text)
+            
             echo "stack_exists=true" >> $GITHUB_OUTPUT
-            echo "Stack ${{ env.STACK_NAME }} exists"
+            echo "stack_status=$STACK_STATUS" >> $GITHUB_OUTPUT
+            echo "Stack ${{ env.STACK_NAME }} exists with status: $STACK_STATUS"
+            
+            # Check if stack is in a failed state that prevents updates
+            if [[ "$STACK_STATUS" == *"FAILED"* ]] || [[ "$STACK_STATUS" == *"ROLLBACK"* ]]; then
+              echo "needs_recreation=true" >> $GITHUB_OUTPUT
+              echo "Stack is in failed state and needs to be recreated"
+            else
+              echo "needs_recreation=false" >> $GITHUB_OUTPUT
+              echo "Stack is in good state for updates"
+            fi
           else
             echo "stack_exists=false" >> $GITHUB_OUTPUT
+            echo "needs_recreation=false" >> $GITHUB_OUTPUT
             echo "Stack ${{ env.STACK_NAME }} does not exist"
           fi
+
+      - name: Delete failed stack
+        if: steps.check-stack.outputs.needs_recreation == 'true'
+        run: |
+          echo "Deleting failed stack ${{ env.STACK_NAME }}..."
+          aws cloudformation delete-stack \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "Waiting for stack deletion to complete..."
+          aws cloudformation wait stack-delete-complete \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "Stack deletion completed"
 
       - name: Deploy CloudFormation stack
         run: |
