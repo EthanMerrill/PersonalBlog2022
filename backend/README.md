@@ -52,7 +52,7 @@ AUTH_USERNAME=admin
 AUTH_PASSWORD=your_strong_password_here
 
 # API Keys (required)
-OPENAI_API_KEY=sk-your-openai-api-key-here
+OPENAI_K=sk-your-openai-api-key-here
 
 # Optional API Keys
 FIREBASE_API_KEY=your-firebase-api-key-here
@@ -62,7 +62,7 @@ FIREBASE_API_KEY=your-firebase-api-key-here
 
 The service reads API keys directly from environment variables:
 
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
+- `OPENAI_K`: Your OpenAI API key (required)
 - `FIREBASE_API_KEY`: Your Firebase API key (optional)
 - Add more keys as needed by updating the Config struct and handlers
 

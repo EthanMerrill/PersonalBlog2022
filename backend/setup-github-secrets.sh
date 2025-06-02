@@ -113,7 +113,7 @@ echo "Secret Name: ALLOWED_ORIGINS"
 echo "Secret Value: https://ethanmerrill.com,https://www.ethanmerrill.com"
 echo ""
 
-echo "Secret Name: OPENAI_API_KEY"
+echo "Secret Name: OPENAI_K"
 echo "Secret Value: [Your OpenAI API key starting with sk-]"
 echo ""
 

@@ -152,7 +152,7 @@ Resources:
           ALLOWED_ORIGIN=${AllowedOrigins}
           AUTH_USERNAME=${AuthUsername}
           AUTH_PASSWORD=${AuthPassword}
-          OPENAI_API_KEY=${OpenAIAPIKey}
+          OPENAI_K=${OpenAIAPIKey}
           FIREBASE_API_KEY=${FirebaseAPIKey}
           EOF
 

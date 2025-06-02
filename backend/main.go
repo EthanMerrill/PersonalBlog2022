@@ -72,7 +72,7 @@ func main() {
 		AllowedOrigins: getEnv("ALLOWED_ORIGIN", "https://ethanmerrill.com"),
 		AuthUsername:   getEnv("AUTH_USERNAME", "admin"),
 		AuthPassword:   getEnv("AUTH_PASSWORD", "changeme"),
-		OpenAIKey:      getEnv("OPENAI_API_KEY", ""),
+		OpenAIKey:      getEnv("OPENAI_K", ""),
 		FirebaseKey:    getEnv("FIREBASE_API_KEY", ""),
 	}
 
@@ -87,7 +87,7 @@ func main() {
 
 	// Validate required environment variables
 	if config.OpenAIKey == "" {
-		log.Println("WARNING: OPENAI_API_KEY environment variable is not set. OpenAI functionality will be disabled.")
+		log.Println("WARNING: OPENAI_K environment variable is not set. OpenAI functionality will be disabled.")
 	}
 
 	service := &SecretService{

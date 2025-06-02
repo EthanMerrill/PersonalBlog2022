@@ -116,7 +116,7 @@ jobs:
               AuthUsername="${{ secrets.AUTH_USERNAME }}" \
               AuthPassword="${{ secrets.AUTH_PASSWORD }}" \
               AllowedOrigins="${{ secrets.ALLOWED_ORIGINS }}" \
-              OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
+              OpenAIAPIKey="${{ secrets.OPENAI_K }}" \
               FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
               GitHubRepo="https://github.com/${{ github.repository }}.git" \
               InstanceType="t2.micro" \

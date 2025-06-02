@@ -13,7 +13,7 @@ services:
       - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
       - AUTH_USERNAME=${AUTH_USERNAME}
       - AUTH_PASSWORD=${AUTH_PASSWORD}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_K=${OPENAI_K}
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
     env_file:
       - .env
