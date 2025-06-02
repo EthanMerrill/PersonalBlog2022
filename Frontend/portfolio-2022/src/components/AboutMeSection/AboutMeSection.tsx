@@ -1,92 +1,252 @@
-import React, { useEffect, useRef, useState } from 'react';
-import ChatMessage from '../ChatMessage/ChatMessage';
-import { Message } from '../../types/Message';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import ChatMessage, { ChatMessageProps } from '../ChatMessage/ChatMessage';
+import { secretsService } from '../../services/secretsService';
 
-const AboutMe: React.FC = () => {
+interface AboutMeSectionProps {
+    width?: number;
+    breakpoint?: number;
+}
 
-    // introductory set of messages to be used
-    const initialMessages: Message[] = [
-        { content: "Hi! I'm a software engineer based in Boston. I'm currently working at a company called CapTech. I'm passionate about web development, and I'm always looking for new opportunities to learn and grow.", timestamp: Date.now(), user:false },
-        { content: "I'm also a big fan of open source software, and I've contributed to a few projects in my free time. I'm always looking for new projects to get involved with, so if you have any ideas, feel free to reach out!", timestamp: Date.now(), user:false },
-        { content: "I'm currently working on a few personal projects, including this website. I'm using it as a platform to showcase my work and share my thoughts on various topics. I'm also planning to add a blog section in the future, so stay tuned for that!", timestamp: Date.now(), user:false },
-        { content: "I'm always open to new opportunities, so if you're interested in working with me, feel free to get in touch. I'm always happy to chat and see how we can work together.", timestamp: Date.now(), user:false },
-    ];
+const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
+    const [isSecretsServiceReady, setIsSecretsServiceReady] = useState(false);
+    const [isProcessingAI, setIsProcessingAI] = useState(false);
 
-    // The about me section is going to be this chat app. It will contain all the state and logic to handle the chat
-    const [chatMessages, setChatMessages] = useState<Message[]>([]);
-    const [messageQueue, setMessageQueue] = useState<Message[]>([...initialMessages]);
+    // Memoize initial messages to prevent recreation on each render
+    const initialMessages: ChatMessageProps[] = useMemo(() => [
+        { message: "Hi! I'm a software engineer based in Boston. I'm currently working CapTech Consulting. I'm passionate about web development, and am always looking for new opportunities to learn and grow.", author: "Ethan's Assistant", timestamp: Date.now(), user: false },
+        { message: "I'm currently working on a few personal projects, including this website. I'm using it as a platform to showcase my work and share my thoughts on various topics.", author: "Ethan's Assistant", timestamp: Date.now(), user: false },
+        { message: "If you have any questions you can ask them here, or drop me a line directly!", author: "Ethan's Assistant", timestamp: Date.now(), user: false },
+    ], []);
+
+    // Chat state
+    const [chatMessages, setChatMessages] = useState<ChatMessageProps[]>([]);
+    const [messageQueue, setMessageQueue] = useState<ChatMessageProps[]>(() => [...initialMessages]);
     const [input, setInput] = useState("");
     const [completed, setCompleted] = useState(true);
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    // event handler to handle submitting a new message
-    const handleSubmit = () => {
-        setChatMessages([...chatMessages, { content: input, timestamp: Date.now(), user:true}]);
-        setInput("");
-    };
+    // 1. Secrets service initialization - runs ONLY once on mount
+    useEffect(() => {
+        let isMounted = true; // Cleanup flag
 
-    // Scroll to bottom on chatMessages change
+        const initializeService = async () => {
+            try {
+                console.log('Initializing secrets service...');
+
+                // Check if service is healthy
+                const isHealthy = await secretsService.healthCheck();
+                if (!isHealthy || !isMounted) {
+                    console.warn('Secrets service is not available');
+                    return;
+                }
+
+                // Auto-authenticate if not already authenticated
+                if (!secretsService.isAuthenticated()) {
+                    const success = await secretsService.authenticate({
+                        username: import.meta.env.VITE_SECRETES_SERVICE_USERNAME || 'admin',
+                        password: import.meta.env.VITE_SECRETES_SERVICE_PASSWORD || 'changeme_strong_password'
+                    });
+
+                    if (!success || !isMounted) {
+                        console.error('Failed to authenticate with secrets service');
+                        return;
+                    }
+                }
+
+                if (isMounted) {
+                    setIsSecretsServiceReady(true);
+                    console.log('Secrets service ready!');
+                }
+            } catch (error) {
+                console.error('Failed to initialize secrets service:', error);
+            }
+        };
+
+        initializeService();
+
+        // Cleanup function
+        return () => {
+            isMounted = false;
+        };
+    }, []); // Empty dependency array - runs only once
+
+    // 2. AI response function - memoized to prevent recreation
+    const getAIResponse = useCallback(async (message: string): Promise<string> => {
+        try {
+            const openaiKey = await secretsService.getOpenAIKey();
+            if (!openaiKey) {
+                throw new Error('OpenAI API key is not available');
+            }
+            console.log('Using OpenAI API key:', openaiKey); // Debugging line
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${openaiKey}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-3.5-turbo',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are Ethan\'s AI assistant on his portfolio website. Be helpful, professional, and represent Ethan well. Keep responses concise and engaging.'
+                        },
+                        {
+                            role: 'user',
+                            content: message
+                        }
+                    ],
+                    max_tokens: 150,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenAI API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0]?.message?.content || 'Sorry, I couldn\'t process that request.';
+        } catch (error) {
+            console.error('AI response error:', error);
+            throw error;
+        }
+    }, []); // No dependencies - function is stable
+
+    // 3. Enhanced submit handler with AI integration
+    const handleSubmit = useCallback(async () => {
+        if (!input.trim()) return;
+
+        const userMessage: ChatMessageProps = {
+            message: input,
+            timestamp: Date.now(),
+            user: true,
+            author: "You"
+        };
+
+        setChatMessages(prev => [...prev, userMessage]);
+        const currentInput = input;
+        setInput("");
+        setIsProcessingAI(true);
+
+        // Only attempt AI response if secrets service is ready
+        if (isSecretsServiceReady) {
+            try {
+                const aiResponse = await getAIResponse(currentInput);
+
+                const aiMessage: ChatMessageProps = {
+                    message: aiResponse,
+                    timestamp: Date.now(),
+                    user: false,
+                    author: "Ethan's Assistant"
+                };
+
+                setChatMessages(prev => [...prev, aiMessage]);
+            } catch (error) {
+                console.error('AI response failed:', error);
+
+                const errorMessage: ChatMessageProps = {
+                    message: "Sorry, I'm having trouble connecting to my AI assistant right now. Feel free to reach out to me directly!",
+                    timestamp: Date.now(),
+                    user: false,
+                    author: "Ethan's Assistant"
+                };
+
+                setChatMessages(prev => [...prev, errorMessage]);
+            }
+        } else {
+            // Fallback when secrets service isn't available
+            const fallbackMessage: ChatMessageProps = {
+                message: "Thanks for your message! The AI assistant is currently offline, but feel free to contact me directly.",
+                timestamp: Date.now(),
+                user: false,
+                author: "Ethan's Assistant"
+            };
+
+            setChatMessages(prev => [...prev, fallbackMessage]);
+        }
+
+        setIsProcessingAI(false);
+    }, [input, isSecretsServiceReady, getAIResponse]);
+
+    // 4. Auto-scroll effect - optimized
     useEffect(() => {
         if (chatContainerRef.current) {
             chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
     }, [chatMessages]);
 
-    // add an event listener to the input to handle submitting a new message when the user presses enter
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
+    // 5. Key press handler - memoized
+    const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter" && !isProcessingAI) {
             handleSubmit();
         }
-    };
+    }, [handleSubmit, isProcessingAI]);
 
-    // Display messages with a delay to simulate a conversation
-    // We're going to have two arrays, a queue of messages to be displayed and a list of messages that have already been displayed
+    // 6. Message queue effect - optimized with proper dependencies
     useEffect(() => {
-        console.log(chatMessages)
-        // if there is a message in the queue and the current message has completed typing, display the next message
         if (messageQueue.length > 0 && completed) {
-                // create a copy of the messageQueue array
-                const updatedMessageQueue = [...messageQueue];
-                // add the first message from the queue to the list of displayed messages
-                setChatMessages([...chatMessages, updatedMessageQueue[0]]);
-                // remove the first message from the queue and update the messageQueue state
-                console.log("Updated Messages:", updatedMessageQueue.slice(1))
-                setMessageQueue(updatedMessageQueue.slice(1));
+            const timer = setTimeout(() => {
+                setChatMessages(prev => [...prev, messageQueue[0]]);
+                setMessageQueue(prev => prev.slice(1));
                 setCompleted(false);
+            }, 100); // Small delay for better UX
+
+            return () => clearTimeout(timer);
         }
-    }, [chatMessages, messageQueue, completed, setCompleted]);
+    }, [messageQueue.length, completed]); // Only depend on length and completed status
+
+    // Remove the console.log that calls getOpenAIKey() on every render
+    // console.log("AI KEY: ", secretsService.getOpenAIKey()) // This was causing issues
 
     return (
         <div className="flex flex-col h-96 mb-10 mx-auto px-10 max-w-6xl">
             <div className="flex-grow rounded-t-lg">
-                {/* Chat messages */}
-                
                 <div ref={chatContainerRef} className="flex flex-col justify-end overflow-scroll h-96">
-                    
                     {chatMessages.map((message, i) => (
-                        <ChatMessage key={i} message={message.content} user={message.user} completed={setCompleted}/>
+                        <ChatMessage
+                            key={`${message.timestamp}-${i}`} // Better key for performance
+                            message={message.message}
+                            user={message.user}
+                            author={message.author}
+                            timestamp={message.timestamp}
+                            completed={setCompleted}
+                        />
                     ))}
-                    </div>
-       
+                    {isProcessingAI && (
+                        <div className="text-gray-500 italic p-2">
+                            Ethan's Assistant is thinking...
+                        </div>
+                    )}
+                </div>
             </div>
-            <div className=" rounded-b-lg">
-                {/* Chat input */}
+            <div className="rounded-b-lg">
                 <div className="flex">
                     <input
                         type="text"
                         className="flex-grow border border-gray-300 rounded-l-lg p-2"
-                        placeholder="Type your message..."
+                        placeholder="Ask me anything about Ethan..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={handleKeyPress}
+                        disabled={isProcessingAI}
                     />
-                    <button className="bg-blue-500 text-white rounded-r-lg p-2 ml-2" onClick={handleSubmit}>
-                        Send
+                    <button
+                        className="bg-blue-500 text-white rounded-r-lg p-2 ml-2 disabled:opacity-50"
+                        onClick={handleSubmit}
+                        disabled={isProcessingAI || !input.trim()}
+                    >
+                        {isProcessingAI ? 'Thinking...' : 'Send'}
                     </button>
                 </div>
+                {!isSecretsServiceReady && (
+                    <div className="text-sm text-amber-600 mt-1">
+                        ⚠️ AI assistant offline - messages will receive static responses
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-export default AboutMe;
+export default AboutMeSection;

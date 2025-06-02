@@ -16,7 +16,7 @@ const CategorySection = (props: IcategorySection) => {
 
     const [hover, setHover] = useState(false)
 
-    const myRef = useRef() as any;
+    const myRef = useRef<HTMLDivElement>(null);
 
     const observer = new IntersectionObserver((entries, observer) => {
         const entry = entries[0];
@@ -28,8 +28,18 @@ const CategorySection = (props: IcategorySection) => {
     });
 
     useEffect(() => {
-        observer.observe(myRef.current);
-    }, []);
+        const currentRef = myRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        // Cleanup function to prevent memory leaks
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [observer]);
 
     return (
         <>
@@ -38,7 +48,8 @@ const CategorySection = (props: IcategorySection) => {
             >
                 <HashLink
                     smooth to={"#" + encodeURI(title)}
-                >{title}
+                >
+                    {title}
                 </HashLink>
             </h2>
             <div id={encodeURI(title)} ref={myRef} >

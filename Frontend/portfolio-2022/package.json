@@ -4,7 +4,9 @@
   "private": true,
   "homepage": "https://ethanmerrill.com",
   "dependencies": {
-    "@types/react": "^18.0.27",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "caniuse-lite": "^1.0.30001720",
     "clsx": "^1.2.1",
     "firebase": "^11.0.2",
     "gh-pages": "^6.2.0",
@@ -13,7 +15,6 @@
     "react-ga": "^3.3.1",
     "react-router-dom": "^6.28.0",
     "react-router-hash-link": "^2.4.3",
-    "react-scripts": "^5.0.1",
     "react-tooltip": "^5.7.3",
     "react-type-animation": "^3.0.1",
     "sass": "^1.48.0",
@@ -21,17 +22,19 @@
   },
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "deploy": "gh-pages -d dist",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "preview": "vite preview",
+    "test": "vitest",
     "tsc": "tsc"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "eslint:recommended",
+      "plugin:react/recommended",
+      "plugin:@typescript-eslint/recommended"
     ]
   },
   "browserslist": {
@@ -47,8 +50,19 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-transform-react-jsx": "^7.27.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.15.29",
     "@types/react-router-hash-link": "^2.4.5",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.14",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.4.24",
     "postcss-import": "^15.1.0",
-    "typescript": "^5.6.3"
+    "tailwindcss": "^3.3.2",
+    "typescript": "^5.0.2",
+    "vite": "^4.5.2",
+    "vitest": "^3.1.4"
   }
 }
