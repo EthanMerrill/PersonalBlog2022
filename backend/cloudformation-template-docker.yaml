@@ -1,121 +1,61 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Deploy Go Secrets Service to EC2 Free Tier using existing Docker setup"
+Description: "Deploy Secrets Service using Docker on EC2"
 
 Parameters:
-  InstanceType:
-    Type: String
-    Default: t2.micro
-    Description: EC2 Instance Type (Free Tier Eligible)
-    AllowedValues:
-      - t2.micro
-      - t3.micro
-
   KeyPairName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: String
+    Description: Name of the EC2 Key Pair for SSH access
 
   JWTSecret:
     Type: String
-    NoEcho: true
     Description: JWT Secret for authentication
-    MinLength: 16
+    NoEcho: true
 
   AuthUsername:
     Type: String
-    Default: admin
-    Description: Admin username for authentication
+    Description: Basic auth username
 
   AuthPassword:
     Type: String
+    Description: Basic auth password
     NoEcho: true
-    Description: Admin password for authentication
-    MinLength: 8
 
   AllowedOrigins:
     Type: String
-    Default: https://ethanmerrill.com
-    Description: Comma-separated list of allowed CORS origins
+    Description: Allowed CORS origins
+    Default: "*"
 
   OpenAIAPIKey:
     Type: String
-    NoEcho: true
     Description: OpenAI API Key
+    NoEcho: true
+    Default: ""
 
   FirebaseAPIKey:
     Type: String
+    Description: Firebase API Key
     NoEcho: true
-    Description: Firebase API Key (optional)
     Default: ""
 
   GitHubRepo:
     Type: String
-    Default: "https://github.com/ethanmerrill/PersonalBlog2022.git"
-    Description: GitHub repository URL (use HTTPS for public repos)
+    Description: GitHub repository URL
+
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
 
 Resources:
-  # VPC and Networking
-  VPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
-      Tags:
-        - Key: Name
-          Value: SecretsService-VPC
-
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [0, !GetAZs ""]
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: SecretsService-PublicSubnet
-
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: SecretsService-IGW
-
-  AttachGateway:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref VPC
-      InternetGatewayId: !Ref InternetGateway
-
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: SecretsService-PublicRouteTable
-
-  PublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: AttachGateway
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  SubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref PublicRouteTable
-
   # Security Group
   SecretsServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for Secrets Service
-      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -127,21 +67,11 @@ Resources:
           ToPort: 8080
           CidrIp: 0.0.0.0/0
           Description: Application port
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-          Description: HTTP access
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-          Description: HTTPS access
       Tags:
         - Key: Name
-          Value: SecretsService-SG
+          Value: secrets-service-sg
 
-  # IAM Role for EC2 instance
+  # IAM Role for EC2
   EC2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -153,9 +83,9 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       Policies:
-        - PolicyName: CloudWatchLogs
+        - PolicyName: SecretsServicePolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -167,199 +97,143 @@ Resources:
                   - logs:DescribeLogStreams
                 Resource: "*"
 
+  # Instance Profile
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref EC2Role
 
-  # CloudWatch Log Group
-  ApplicationLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/ec2/${AWS::StackName}/secrets-service"
-      RetentionInDays: 7
-
   # EC2 Instance
   SecretsServiceInstance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !Sub "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+      ImageId: ami-0c02fb55956c7d316 # Amazon Linux 2 AMI (update as needed)
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyPairName
-      IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroupIds:
         - !Ref SecretsServiceSecurityGroup
-      SubnetId: !Ref PublicSubnet
+      IamInstanceProfile: !Ref EC2InstanceProfile
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-          echo "$(date): Starting UserData script..."
-
-          # Update system packages
           yum update -y
 
           # Install Docker
-          echo "$(date): Installing Docker..."
-          amazon-linux-extras install docker -y
-          service docker start
-          usermod -a -G docker ec2-user
+          yum install -y docker git
+          systemctl start docker
           systemctl enable docker
+          usermod -a -G docker ec2-user
 
           # Install Docker Compose
-          echo "$(date): Installing Docker Compose..."
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           chmod +x /usr/local/bin/docker-compose
-          ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+          ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
-          # Install Git
-          echo "$(date): Installing Git..."
-          yum install git wget -y
+          # Install AWS CLI v2
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          ./aws/install
 
           # Create application directory
           mkdir -p /opt/secrets-service
           cd /opt/secrets-service
 
-          # Clone the repository
-          echo "$(date): Cloning repository..."
-          git clone ${GitHubRepo} repo
-          cd repo/backend
+          # Clone repository
+          git clone ${GitHubRepo} .
+          cd backend
 
-          # Create environment file from parameters
-          echo "$(date): Creating environment file..."
+          # Create environment file
           cat > .env << EOF
-          # JWT Configuration
+          VAULT_ADDR=http://localhost:8200
+          VAULT_TOKEN=dev-token
           JWT_SECRET=${JWTSecret}
-
-          # Server Configuration
           PORT=8080
           ALLOWED_ORIGIN=${AllowedOrigins}
-
-          # Authentication credentials
           AUTH_USERNAME=${AuthUsername}
           AUTH_PASSWORD=${AuthPassword}
-
-          # API Keys
           OPENAI_API_KEY=${OpenAIAPIKey}
           FIREBASE_API_KEY=${FirebaseAPIKey}
           EOF
 
-          # Set proper ownership
-          chown -R ec2-user:ec2-user /opt/secrets-service
-
-          # Wait for Docker to be fully ready
-          echo "$(date): Waiting for Docker to be ready..."
-          sleep 10
-
-          # Use sudo for Docker commands to avoid permission issues
-          echo "$(date): Building Docker image..."
-          if sudo /usr/local/bin/docker-compose build; then
-              echo "$(date): Docker build successful"
-          else
-              echo "$(date): Docker build failed"
-              sudo /usr/local/bin/docker-compose logs
-              /opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource SecretsServiceInstance --region ${AWS::Region}
-              exit 1
-          fi
-
-          echo "$(date): Starting application..."
-          if sudo /usr/local/bin/docker-compose up -d; then
-              echo "$(date): Application started successfully"
-          else
-              echo "$(date): Failed to start application"
-              sudo /usr/local/bin/docker-compose logs
-              /opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource SecretsServiceInstance --region ${AWS::Region}
-              exit 1
-          fi
-
-          # Wait for application to be ready
-          echo "$(date): Waiting for application to respond..."
-          for i in {1..30}; do
-              if wget -q --spider http://localhost:8080/health; then
-                  echo "$(date): Health check passed!"
-                  echo "$(date): Application is ready!"
-                  break
-              fi
-              if [ $i -eq 30 ]; then
-                  echo "$(date): Health check failed after 30 attempts"
-                  sudo /usr/local/bin/docker-compose logs
-                  /opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource SecretsServiceInstance --region ${AWS::Region}
-                  exit 1
-              fi
-              echo "$(date): Attempt $i failed, waiting 10 seconds..."
-              sleep 10
-          done
-
-          # Create convenience scripts for later management
-          cat > /opt/secrets-service/restart.sh << 'SCRIPT'
+          # Create management scripts
+          cat > /opt/secrets-service/start.sh << 'EOF'
           #!/bin/bash
-          cd /opt/secrets-service/repo/backend
-          sudo /usr/local/bin/docker-compose down
-          sudo /usr/local/bin/docker-compose up -d
-          SCRIPT
+          cd /opt/secrets-service/backend
+          docker-compose up -d
+          EOF
 
-          cat > /opt/secrets-service/logs.sh << 'SCRIPT'
+          cat > /opt/secrets-service/stop.sh << 'EOF'
           #!/bin/bash
-          cd /opt/secrets-service/repo/backend
-          sudo /usr/local/bin/docker-compose logs -f
-          SCRIPT
+          cd /opt/secrets-service/backend
+          docker-compose down
+          EOF
 
-          cat > /opt/secrets-service/status.sh << 'SCRIPT'
+          cat > /opt/secrets-service/restart.sh << 'EOF'
           #!/bin/bash
-          cd /opt/secrets-service/repo/backend
-          sudo /usr/local/bin/docker-compose ps
-          curl -s http://localhost:8080/health | jq . || curl -s http://localhost:8080/health
-          SCRIPT
+          cd /opt/secrets-service/backend
+          docker-compose down
+          git pull origin main
+          docker-compose up -d --build
+          EOF
 
+          cat > /opt/secrets-service/status.sh << 'EOF'
+          #!/bin/bash
+          cd /opt/secrets-service/backend
+          docker-compose ps
+          EOF
+
+          cat > /opt/secrets-service/logs.sh << 'EOF'
+          #!/bin/bash
+          cd /opt/secrets-service/backend
+          docker-compose logs -f
+          EOF
+
+          # Make scripts executable
           chmod +x /opt/secrets-service/*.sh
-          chown ec2-user:ec2-user /opt/secrets-service/*.sh
 
-          echo "$(date): Setup complete, sending success signal..."
-          /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource SecretsServiceInstance --region ${AWS::Region}
+          # Start the application
+          /opt/secrets-service/start.sh
+
+          # Create systemd service for auto-restart
+          cat > /etc/systemd/system/secrets-service.service << 'EOF'
+          [Unit]
+          Description=Secrets Service
+          Requires=docker.service
+          After=docker.service
+
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStart=/opt/secrets-service/start.sh
+          ExecStop=/opt/secrets-service/stop.sh
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          systemctl enable secrets-service
+          systemctl start secrets-service
+
       Tags:
         - Key: Name
-          Value: SecretsService-Instance
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT15M
-
-  # Elastic IP for the instance
-  ElasticIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      InstanceId: !Ref SecretsServiceInstance
+          Value: secrets-service-instance
 
 Outputs:
-  InstanceId:
-    Description: Instance ID of the EC2 instance
-    Value: !Ref SecretsServiceInstance
-
   PublicIP:
     Description: Public IP address of the EC2 instance
-    Value: !Ref ElasticIP
+    Value: !GetAtt SecretsServiceInstance.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicIP"
 
   ApplicationURL:
     Description: URL of the application
-    Value: !Sub "http://${ElasticIP}:8080"
-
-  HealthCheckURL:
-    Description: Health check endpoint
-    Value: !Sub "http://${ElasticIP}:8080/health"
+    Value: !Sub "http://${SecretsServiceInstance.PublicIp}:8080"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationURL"
 
   SSHCommand:
     Description: SSH command to connect to the instance
-    Value: !Sub "ssh -i ${KeyPairName}.pem ec2-user@${ElasticIP}"
-
-  LogGroup:
-    Description: CloudWatch Log Group for application logs
-    Value: !Ref ApplicationLogGroup
-
-  ManagementCommands:
-    Description: Useful commands for managing the application
-    Value: !Sub |
-      SSH: ssh -i ${KeyPairName}.pem ec2-user@${ElasticIP}
-      Restart: sudo /opt/secrets-service/restart.sh
-      Logs: sudo /opt/secrets-service/logs.sh
-      Status: sudo /opt/secrets-service/status.sh
+    Value: !Sub "ssh -i ${KeyPairName}.pem ec2-user@${SecretsServiceInstance.PublicIp}"
+    Export:
+      Name: !Sub "${AWS::StackName}-SSHCommand"
