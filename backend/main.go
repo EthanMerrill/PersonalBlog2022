@@ -87,7 +87,7 @@ func main() {
 
 	// Validate required environment variables
 	if config.OpenAIKey == "" {
-		log.Fatal("OPENAI_API_KEY environment variable is required")
+		log.Println("WARNING: OPENAI_API_KEY environment variable is not set. OpenAI functionality will be disabled.")
 	}
 
 	service := &SecretService{
