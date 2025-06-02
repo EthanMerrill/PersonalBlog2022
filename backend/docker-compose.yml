@@ -13,11 +13,13 @@ services:
       - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
       - AUTH_USERNAME=${AUTH_USERNAME}
       - AUTH_PASSWORD=${AUTH_PASSWORD}
+      - OPENAI_K=${OPENAI_K}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
     env_file:
       - .env
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

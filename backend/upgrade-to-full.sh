@@ -74,7 +74,7 @@ AUTH_USERNAME=${AUTH_USERNAME:-admin}
 read -p "Auth Password: " -s AUTH_PASSWORD
 echo ""
 
-read -p "OpenAI API Key: " -s OPENAI_API_KEY
+read -p "OpenAI API Key: " -s OPENAI_K
 echo ""
 
 read -p "Firebase API Key (optional): " -s FIREBASE_API_KEY
@@ -94,7 +94,7 @@ if [ ${#AUTH_PASSWORD} -lt 8 ]; then
     exit 1
 fi
 
-if [ -z "$OPENAI_API_KEY" ]; then
+if [ -z "$OPENAI_K" ]; then
     echo -e "${RED}❌ OpenAI API Key is required${NC}"
     exit 1
 fi
@@ -195,7 +195,7 @@ PORT=8080
 ALLOWED_ORIGIN=$ALLOWED_ORIGINS
 AUTH_USERNAME=$AUTH_USERNAME
 AUTH_PASSWORD=$AUTH_PASSWORD
-OPENAI_API_KEY=$OPENAI_API_KEY
+OPENAI_K=$OPENAI_K
 FIREBASE_API_KEY=$FIREBASE_API_KEY
 EOF
 

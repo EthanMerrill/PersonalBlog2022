@@ -39,15 +39,17 @@ func TestHealthHandler(t *testing.T) {
 }
 
 func TestAuthHandler(t *testing.T) {
-	service := &SecretService{
-		config: &Config{
-			JWTSecret: "test-secret",
-		},
-	}
-
 	// Set environment variables for test
 	t.Setenv("AUTH_USERNAME", "testuser")
 	t.Setenv("AUTH_PASSWORD", "testpass")
+
+	service := &SecretService{
+		config: &Config{
+			JWTSecret:    "test-secret",
+			AuthUsername: "testuser",
+			AuthPassword: "testpass",
+		},
+	}
 
 	authReq := AuthRequest{
 		Username: "testuser",
@@ -86,15 +88,17 @@ func TestAuthHandler(t *testing.T) {
 }
 
 func TestAuthHandlerInvalidCredentials(t *testing.T) {
-	service := &SecretService{
-		config: &Config{
-			JWTSecret: "test-secret",
-		},
-	}
-
 	// Set environment variables for test
 	t.Setenv("AUTH_USERNAME", "testuser")
 	t.Setenv("AUTH_PASSWORD", "testpass")
+
+	service := &SecretService{
+		config: &Config{
+			JWTSecret:    "test-secret",
+			AuthUsername: "testuser",
+			AuthPassword: "testpass",
+		},
+	}
 
 	authReq := AuthRequest{
 		Username: "wronguser",

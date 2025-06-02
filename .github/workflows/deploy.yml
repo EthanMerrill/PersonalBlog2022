@@ -31,16 +31,7 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "1.21"
-
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache-dependency-path: backend/go.sum
 
       - name: Download dependencies
         run: go mod download
@@ -55,7 +46,7 @@ jobs:
     name: Deploy to AWS
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
     defaults:
       run:
         working-directory: ./backend
@@ -71,15 +62,91 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Check if stack exists
+      - name: Check stack and instance status
         id: check-stack
         run: |
           if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            STACK_STATUS=$(aws cloudformation describe-stacks \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].StackStatus' \
+              --output text)
+            
             echo "stack_exists=true" >> $GITHUB_OUTPUT
-            echo "Stack ${{ env.STACK_NAME }} exists"
+            echo "stack_status=$STACK_STATUS" >> $GITHUB_OUTPUT
+            echo "Stack ${{ env.STACK_NAME }} exists with status: $STACK_STATUS"
+            
+            # Check if stack is in a failed state that prevents updates
+            if [[ "$STACK_STATUS" == *"FAILED"* ]] || [[ "$STACK_STATUS" == *"ROLLBACK"* ]]; then
+              echo "needs_recreation=true" >> $GITHUB_OUTPUT
+              echo "Stack is in failed state and needs to be recreated"
+            elif [[ "$STACK_STATUS" == "CREATE_COMPLETE" ]] || [[ "$STACK_STATUS" == "UPDATE_COMPLETE" ]]; then
+              # Stack is healthy, now check EC2 instance state
+              echo "Checking EC2 instance state..."
+              INSTANCE_ID=$(aws cloudformation describe-stack-resources \
+                --stack-name ${{ env.STACK_NAME }} \
+                --region ${{ env.AWS_REGION }} \
+                --logical-resource-id "EC2Instance" \
+                --query 'StackResources[0].PhysicalResourceId' \
+                --output text 2>/dev/null || echo "")
+              
+              if [ -n "$INSTANCE_ID" ] && [ "$INSTANCE_ID" != "None" ]; then
+                INSTANCE_STATE=$(aws ec2 describe-instances \
+                  --instance-ids "$INSTANCE_ID" \
+                  --region ${{ env.AWS_REGION }} \
+                  --query 'Reservations[0].Instances[0].State.Name' \
+                  --output text 2>/dev/null || echo "not-found")
+                
+                echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+                echo "instance_state=$INSTANCE_STATE" >> $GITHUB_OUTPUT
+                echo "EC2 Instance ID: $INSTANCE_ID"
+                echo "EC2 Instance State: $INSTANCE_STATE"
+                
+                # Check if instance is terminated or terminating
+                if [[ "$INSTANCE_STATE" == "terminated" ]] || [[ "$INSTANCE_STATE" == "terminating" ]] || [[ "$INSTANCE_STATE" == "not-found" ]]; then
+                  echo "needs_recreation=true" >> $GITHUB_OUTPUT
+                  echo "EC2 instance is terminated/terminating or not found - stack needs recreation"
+                else
+                  echo "needs_recreation=false" >> $GITHUB_OUTPUT
+                  echo "EC2 instance is in acceptable state: $INSTANCE_STATE"
+                fi
+              else
+                echo "needs_recreation=true" >> $GITHUB_OUTPUT
+                echo "Could not find EC2 instance in stack - stack needs recreation"
+              fi
+            else
+              echo "needs_recreation=false" >> $GITHUB_OUTPUT
+              echo "Stack is in transitional state, will attempt update"
+            fi
           else
             echo "stack_exists=false" >> $GITHUB_OUTPUT
+            echo "needs_recreation=false" >> $GITHUB_OUTPUT
             echo "Stack ${{ env.STACK_NAME }} does not exist"
+          fi
+
+      - name: Delete failed stack or recreate for terminated instance
+        if: steps.check-stack.outputs.needs_recreation == 'true'
+        run: |
+          if [[ "${{ steps.check-stack.outputs.stack_exists }}" == "true" ]]; then
+            echo "Deleting stack ${{ env.STACK_NAME }}..."
+            if [[ -n "${{ steps.check-stack.outputs.instance_state }}" ]]; then
+              echo "Reason: EC2 instance is in state '${{ steps.check-stack.outputs.instance_state }}'"
+            else
+              echo "Reason: Stack is in failed state '${{ steps.check-stack.outputs.stack_status }}'"
+            fi
+            
+            aws cloudformation delete-stack \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }}
+
+            echo "Waiting for stack deletion to complete..."
+            aws cloudformation wait stack-delete-complete \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }}
+
+            echo "Stack deletion completed"
+          else
+            echo "Stack does not exist, proceeding with creation"
           fi
 
       - name: Deploy CloudFormation stack
@@ -96,6 +163,7 @@ jobs:
               OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
               FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
               GitHubRepo="https://github.com/${{ github.repository }}.git" \
+              InstanceType="t2.micro" \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }} \
             --no-fail-on-empty-changeset
