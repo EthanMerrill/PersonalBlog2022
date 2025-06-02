@@ -91,6 +91,7 @@ jobs:
               OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
               FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
               GitHubRepo="https://github.com/${{ github.repository }}.git" \
+              InstanceType="t2.micro" \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }} \
             --no-fail-on-empty-changeset
