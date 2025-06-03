@@ -163,6 +163,8 @@ jobs:
               OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
               FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
               GitHubRepo="https://github.com/${{ github.repository }}.git" \
+              DomainName="${{ secrets.DOMAIN_NAME }}" \
+              SSLEmail="${{ secrets.SSL_EMAIL }}" \
               InstanceType="t2.micro" \
             --capabilities CAPABILITY_IAM \
             --region ${{ env.AWS_REGION }} \

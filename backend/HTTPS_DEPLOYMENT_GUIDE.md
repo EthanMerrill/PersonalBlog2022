@@ -1,271 +1,264 @@
 # HTTPS Deployment Guide
 
-This guide covers multiple approaches to add HTTPS to your backend service currently running on AWS EC2.
+This service uses **Nginx reverse proxy** as the single HTTPS solution. The Go application runs as a simple HTTP service behind Nginx, which handles SSL termination, security headers, and load balancing.
 
-## Overview
+## Architecture
 
-Your current setup:
+```
+Internet → Nginx (HTTPS :443, HTTP :80) → Go Application (HTTP :8080)
+             ↓
+    Let's Encrypt SSL Certificates
+```
 
-- Go backend service running on EC2 port 8080 (HTTP)
-- Frontend served via GitHub Pages
-- API calls from frontend to backend over HTTP
+## Automated Deployment (Recommended)
 
-After HTTPS implementation:
+### GitHub Actions + AWS CloudFormation
 
-- Secure encrypted communication between frontend and backend
-- Browser security warnings eliminated
-- Improved SEO and security posture
+The easiest way to deploy with HTTPS is using the automated GitHub Actions workflow:
 
-## Option 1: Application Load Balancer with SSL Certificate (Recommended for Production)
+1. **Set up GitHub Secrets** (see [GITHUB_SECRETS_SETUP.md](./GITHUB_SECRETS_SETUP.md))
+2. **Push to main branch** - Automatic deployment with SSL setup
+3. **Point your domain to the EC2 IP** - DNS configuration
 
-### Advantages
+### Benefits of Automated Deployment
 
-- ✅ Professional-grade security
-- ✅ Automatic SSL termination
-- ✅ Health checks and high availability
-- ✅ Can use ACM certificates (free)
-- ✅ Handles traffic distribution
+- ✅ Complete infrastructure setup (EC2, Security Groups, IAM)
+- ✅ Automatic Let's Encrypt certificate generation
+- ✅ Docker Compose with Nginx configuration
+- ✅ Automatic certificate renewal setup
+- ✅ Health checks and monitoring
+- ✅ Management scripts for maintenance
 
-### Steps
+## Manual Deployment
 
-1. **Request SSL Certificate (if using custom domain)**
-
-   ```bash
-   # In AWS Certificate Manager
-   # Request certificate for your domain (e.g., api.ethanmerrill.com)
-   # Validate via DNS or email
-   ```
-
-2. **Deploy with CloudFormation**
-
-   ```bash
-   # Copy and customize the HTTPS CloudFormation template
-   cp cloudformation-template-https.yaml my-https-deployment.yal
-
-   # Deploy the stack
-   aws cloudformation create-stack \
-     --stack-name secrets-service-https \
-     --template-body file://my-https-deployment.yaml \
-     --parameters \
-       ParameterKey=KeyPairName,ParameterValue=your-key-name \
-       ParameterKey=CertificateArn,ParameterValue=arn:aws:acm:region:account:certificate/certificate-id \
-       ParameterKey=DomainName,ParameterValue=api.ethanmerrill.com \
-       ParameterKey=JWTSecret,ParameterValue=your-jwt-secret \
-       ParameterKey=AuthUsername,ParameterValue=admin \
-       ParameterKey=AuthPassword,ParameterValue=your-password \
-       ParameterKey=OpenAIAPIKey,ParameterValue=your-openai-key \
-       ParameterKey=GitHubRepo,ParameterValue=https://github.com/your-username/PersonalBlog2022.git \
-     --capabilities CAPABILITY_IAM
-   ```
-
-3. **Update DNS**
-
-   - Point your domain to the load balancer DNS name
-   - Or use the load balancer URL directly
-
-4. **Update Frontend Configuration**
-   ```bash
-   # Update your GitHub repository secrets
-   VITE_SECRETS_SERVICE_URL=https://your-alb-dns-name
-   # or
-   VITE_SECRETS_SERVICE_URL=https://api.ethanmerrill.com
-   ```
-
-## Option 2: Direct HTTPS in Go Application
-
-### Advantages
-
-- ✅ Simple setup
-- ✅ No additional AWS resources needed
-- ✅ Direct TLS in application
-
-### Disadvantages
-
-- ❌ Manual certificate management
-- ❌ Single point of failure
-- ❌ Browser warnings with self-signed certificates
-
-### Steps
-
-1. **Generate SSL Certificates**
-
-   For **development/testing** (self-signed):
-
-   ```bash
-   cd backend
-   ./generate-ssl-certs.sh your-domain.com
-   ```
-
-   For **production** (Let's Encrypt):
-
-   ```bash
-   # On your EC2 instance
-   ./setup-letsencrypt.sh api.ethanmerrill.com your-email@domain.com
-   ```
-
-2. **Update Environment Variables**
-
-   ```bash
-   # Add to your .env file
-   USE_HTTPS=true
-   TLS_CERT_FILE=/opt/certs/server.crt
-   TLS_KEY_FILE=/opt/certs/server.key
-   ```
-
-3. **Deploy with Docker**
-
-   ```bash
-   # Use the HTTPS Docker Compose configuration
-   CERT_DIR=./certs docker-compose -f docker-compose-https.yml up -d
-   ```
-
-4. **Update Security Groups**
-   ```bash
-   # Allow HTTPS traffic
-   aws ec2 authorize-security-group-ingress \
-     --group-id sg-your-security-group \
-     --protocol tcp \
-     --port 443 \
-     --cidr 0.0.0.0/0
-   ```
-
-## Option 3: Nginx Reverse Proxy with SSL
-
-### Advantages
-
-- ✅ SSL termination at proxy level
-- ✅ Additional security features
-- ✅ Rate limiting capabilities
-- ✅ Static file serving
-
-### Steps
-
-1. **Generate Certificates** (same as Option 2)
-
-2. **Deploy with Nginx**
-
-   ```bash
-   # Use Docker Compose with Nginx profile
-   CERT_DIR=./certs docker-compose -f docker-compose-https.yml --profile with-nginx up -d
-   ```
-
-3. **Configure Security Groups**
-   - Allow ports 80 and 443 for Nginx
-   - Restrict port 8080 to only Nginx container
-
-## Quick Start Commands
-
-### For Development (Self-signed certificates)
+### Option 1: Production with Let's Encrypt
 
 ```bash
 cd backend
 
-# Generate self-signed certificates
-./generate-ssl-certs.sh localhost
+# 1. Set up environment
+cp .env.example .env
+# Edit .env with your actual values
 
-# Update environment
-echo "USE_HTTPS=true" >> .env
-echo "TLS_CERT_FILE=./certs/server.crt" >> .env
-echo "TLS_KEY_FILE=./certs/server.key" >> .env
+# 2. Start without SSL first (for certificate generation)
+docker-compose up -d
 
-# Start with HTTPS
-CERT_DIR=./certs docker-compose -f docker-compose-https.yml up -d
+# 3. Generate Let's Encrypt certificates
+sudo ./setup-letsencrypt.sh api.yourdomain.com your-email@domain.com
 
-# Test
-curl -k https://localhost:8080/health
+# Service automatically restarts with HTTPS enabled
 ```
 
-### For Production (Let's Encrypt)
+### Option 2: Development with Self-signed Certificates
 
 ```bash
-# On EC2 instance
-cd /opt/secrets-service/backend
+cd backend
 
-# Setup Let's Encrypt (replace with your domain)
-sudo ./setup-letsencrypt.sh api.ethanmerrill.com your-email@domain.com
+# 1. Generate self-signed certificates
+mkdir -p certs
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout certs/server.key \
+  -out certs/server.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 
-# Service will automatically restart with HTTPS
+# 2. Start services
+docker-compose up -d
+
+# 3. Test HTTPS (ignore self-signed certificate warning)
+curl -k https://localhost/health
+```
+
+## Nginx Configuration Features
+
+The `nginx.conf` provides:
+
+- **SSL Termination**: Handles HTTPS encryption/decryption
+- **HTTP to HTTPS Redirect**: Automatic security upgrade
+- **Security Headers**: HSTS, XSS protection, content type sniffing protection
+- **Reverse Proxy**: Routes traffic to Go application
+- **Performance**: SSL session caching, HTTP/2 support
+
+## Certificate Management
+
+### Automatic Renewal
+
+The `setup-letsencrypt.sh` script automatically configures certificate renewal:
+
+```bash
+# Renewal happens automatically via cron job
+# Manual renewal for testing:
+sudo /opt/secrets-service/renew-certs.sh
+
+# Check renewal status
+sudo crontab -l | grep certbot
+```
+
+### Manual Certificate Management
+
+```bash
+# Check certificate status
+sudo certbot certificates
+
+# Force renewal (if within 30 days of expiration)
+sudo certbot renew --force-renewal
+
+# Test renewal without actually renewing
+sudo certbot renew --dry-run
 ```
 
 ## Frontend Updates Required
 
 After enabling HTTPS on your backend, update your frontend configuration:
 
-### 1. Update GitHub Secrets
+### 1. Update Environment Variables
 
 ```bash
-# Set in your GitHub repository secrets
-VITE_SECRETS_SERVICE_URL=https://your-backend-url
+# Production
+VITE_SECRETS_SERVICE_URL=https://api.yourdomain.com
+
+# Development (with self-signed certificates)
+VITE_SECRETS_SERVICE_URL=https://localhost
 ```
 
-### 2. Update Local Development
+### 2. Update CORS Configuration
+
+In your `.env` file, update the allowed origins:
 
 ```bash
-# In frontend/.env.local
-VITE_SECRETS_SERVICE_URL=https://localhost:8080
-```
-
-### 3. Handle Self-signed Certificates in Development
-
-```typescript
-// For development only - accept self-signed certificates
-// Add to your secretsService.ts for local development
-const response = await fetch(url, {
-  ...options,
-  // Only for development with self-signed certificates
-  ...(process.env.NODE_ENV === "development" && {
-    agent: new (require("https").Agent)({
-      rejectUnauthorized: false,
-    }),
-  }),
-});
+ALLOWED_ORIGIN=https://yourdomain.com,https://www.yourdomain.com
 ```
 
 ## Security Considerations
 
 ### Production Checklist
 
-- [ ] Use certificates from a trusted CA (Let's Encrypt, etc.)
-- [ ] Enable HSTS headers
+- [ ] Use certificates from a trusted CA (Let's Encrypt)
+- [ ] Enable HSTS headers (handled by Nginx)
 - [ ] Update CORS origins to use HTTPS URLs
-- [ ] Remove HTTP endpoints or redirect to HTTPS
-- [ ] Update firewall rules
-- [ ] Set up certificate auto-renewal
+- [ ] Remove HTTP access or redirect to HTTPS (handled by Nginx)
+- [ ] Configure proper security groups (ports 80, 443, 22 only)
+- [ ] Set up automatic certificate renewal (handled by script)
 - [ ] Monitor certificate expiration
+- [ ] Regular security updates for Nginx and system packages
 
-### Development vs Production
+### Security Headers Enabled
 
-| Aspect       | Development         | Production       |
-| ------------ | ------------------- | ---------------- |
-| Certificates | Self-signed         | Let's Encrypt/CA |
-| Domain       | localhost           | Real domain      |
-| Warnings     | Browser warnings OK | No warnings      |
-| Renewal      | Manual              | Automatic        |
+The Nginx configuration automatically adds:
+
+- `Strict-Transport-Security`: Enforces HTTPS
+- `X-Frame-Options`: Prevents clickjacking
+- `X-Content-Type-Options`: Prevents MIME type sniffing
+- `X-XSS-Protection`: Basic XSS protection
+
+## Monitoring and Maintenance
+
+### Health Checks
+
+```bash
+# Check service status
+curl https://yourdomain.com/health
+
+# Check certificate validity
+echo | openssl s_client -servername yourdomain.com -connect yourdomain.com:443 2>/dev/null | openssl x509 -noout -dates
+
+# Check Docker services
+docker-compose ps
+```
+
+### Log Monitoring
+
+```bash
+# Application logs
+docker-compose logs -f secrets-service
+
+# Nginx logs
+docker-compose logs -f nginx
+
+# Certificate renewal logs
+sudo tail -f /var/log/letsencrypt-renewal.log
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Certificate not found errors**
+1. **"Certificate not found" errors**
 
    ```bash
-   # Check certificate files exist and have correct permissions
-   ls -la /opt/certs/
+   # Check certificate files exist
+   ls -la /opt/secrets-service/backend/certs/
+
+   # Verify permissions
+   sudo chown -R ec2-user:ec2-user /opt/secrets-service/backend/certs
    ```
 
-2. **Port access issues**
+2. **"Connection refused" on HTTPS**
 
    ```bash
-   # Check security groups allow HTTPS traffic
-   curl -v https://your-domain:443/health
+   # Check Nginx is running
+   docker-compose ps nginx
+
+   # Check security group allows port 443
+   # Verify DNS points to correct IP
    ```
 
-3. **Certificate validation errors**
+3. **"Invalid certificate" warnings**
 
    ```bash
-   # Verify certificate details
-   openssl x509 -in /opt/certs/server.crt -text -noout
+   # Check domain name matches certificate
+   openssl x509 -in certs/server.crt -text -noout | grep DNS
+
+   # Regenerate if needed
+   sudo ./setup-letsencrypt.sh yourdomain.com your-email@domain.com
    ```
+
+4. **Let's Encrypt rate limiting**
+   ```bash
+   # Check rate limits: https://letsencrypt.org/docs/rate-limits/
+   # Use staging environment for testing:
+   # certbot --staging --dry-run
+   ```
+
+## Development Tips
+
+### Testing HTTPS Locally
+
+```bash
+# Add to /etc/hosts for testing with real domain names
+127.0.0.1 api.localhost.dev
+
+# Generate certificates for this domain
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout certs/server.key \
+  -out certs/server.crt \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=api.localhost.dev"
+
+# Test with curl
+curl -k https://api.localhost.dev/health
+```
+
+### Browser Certificate Acceptance
+
+For development with self-signed certificates:
+
+1. Visit `https://localhost` in browser
+2. Click "Advanced" → "Proceed to localhost (unsafe)"
+3. Certificate will be remembered for the session
+
+## Migration from Other HTTPS Methods
+
+If you previously used direct Go HTTPS or ALB, the new Nginx-only approach provides:
+
+- **Better Performance**: Nginx handles SSL more efficiently
+- **Better Security**: Professional-grade SSL configuration
+- **Easier Management**: Centralized certificate handling
+- **More Features**: Load balancing, rate limiting, security headers
+- **Simpler Architecture**: Single HTTPS termination point
+  # Verify certificate details
+  openssl x509 -in /opt/certs/server.crt -text -noout
+  ```
+
+  ```
 
 4. **Docker volume mount issues**
    ```bash
@@ -291,13 +284,3 @@ openssl x509 -in /opt/certs/server.crt -noout -dates
 - Certificate validation failures
 - HTTP to HTTPS redirects
 - Backend health checks
-
-## Cost Implications
-
-| Option       | AWS Costs                          | Complexity |
-| ------------ | ---------------------------------- | ---------- |
-| ALB + ACM    | ~$16/month for ALB + free ACM cert | Medium     |
-| Direct HTTPS | No additional cost                 | Low        |
-| Nginx Proxy  | No additional cost                 | Medium     |
-
-Choose the option that best fits your budget, security requirements, and operational preferences.

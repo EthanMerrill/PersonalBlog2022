@@ -11,6 +11,7 @@ A secure Go-based Backend for Frontend (BFF) service that manages API keys throu
 - **Containerized**: Docker and Docker Compose support with Nginx integration
 - **Health Checks**: Built-in health monitoring
 - **Production Ready**: Let's Encrypt integration via Nginx
+- **Cloudflare Compatible**: Optimized for Cloudflare CDN and security features
 - **Simplified Setup**: No external secret management service required
 
 ## Architecture
@@ -18,9 +19,9 @@ A secure Go-based Backend for Frontend (BFF) service that manages API keys throu
 This service uses **Nginx reverse proxy** for HTTPS termination:
 
 ```
-Frontend (Vite) → [HTTPS] → Nginx → [HTTP] → Go Service → Environment Variables
-                     ↓              ↓
-              SSL/TLS Encryption   Load Balancing & Security Headers
+Frontend (Vite) → [HTTPS] → Cloudflare → [HTTPS] → Nginx → [HTTP] → Go Service → Environment Variables
+                     ↓          ↓           ↓         ↓
+                SSL/TLS    CDN+Security  SSL Term  Load Balancing
 ```
 
 Benefits:
@@ -88,7 +89,25 @@ The Nginx configuration automatically:
 - Proxies requests to the Go application
 - Adds security headers
 
-### 3. API Key Management
+### 3. Cloudflare Integration (Recommended)
+
+For enhanced performance and security, integrate with Cloudflare:
+
+#### Quick Setup:
+```bash
+# Interactive setup script
+./setup-cloudflare.sh
+```
+
+#### Manual Setup:
+1. **Configure DNS** in Cloudflare dashboard
+2. **Set SSL/TLS mode** to "Full (strict)"
+3. **Enable security features** (Bot Fight Mode, WAF)
+4. **Update GitHub secrets** with your domain
+
+See [CLOUDFLARE_INTEGRATION_GUIDE.md](./CLOUDFLARE_INTEGRATION_GUIDE.md) for detailed instructions.
+
+### 4. API Key Management
 
 The service reads API keys directly from environment variables:
 
@@ -96,25 +115,47 @@ The service reads API keys directly from environment variables:
 - `FIREBASE_API_KEY`: Your Firebase API key (optional)
 - Add more keys as needed by updating the Config struct and handlers
 
-### 4. Running the Service
+### 5. Running the Service
 
 #### Using Docker Compose with Nginx (Recommended for Production)
 
-````bash
-# Start both Go app and Nginx
+#### Using Docker Compose with Nginx (Recommended for Production)
+
+```bash
+# Start both Go app and Nginx with SSL certificates
+docker-compose up -d
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
 #### Local Development (HTTP only)
 
 ```bash
 go mod tidy
 go run main.go
-````
+```
+
+The Go application will be available at `http://localhost:8080`
 
 #### Production with Docker and Nginx
 
 ```bash
+# Ensure certificates exist in ./certs/
 # Start both Go app and Nginx with SSL certificates
-CERT_DIR=./certs docker-compose up -d
+docker-compose up -d
 ```
+
+Access via:
+
+- HTTP: `http://localhost` (redirects to HTTPS)
+- HTTPS: `https://localhost` (with your certificates)
 
 ## API Endpoints
 
@@ -236,7 +277,40 @@ For your portfolio application, I've implemented **JWT-based authentication** ra
 
 ## Production Deployment
 
-### Recommended Hosting Options:
+### Automated Deployment with GitHub Actions
+
+This service is configured for **automated deployment to AWS EC2** using GitHub Actions and CloudFormation.
+
+#### Setup Steps:
+
+1. **Configure GitHub Secrets** (see [GITHUB_SECRETS_SETUP.md](./GITHUB_SECRETS_SETUP.md))
+
+   - AWS credentials and key pair
+   - Application configuration (JWT secret, auth credentials)
+   - Domain configuration (for HTTPS with Let's Encrypt)
+
+2. **Push to Main Branch**
+
+   - GitHub Actions automatically deploys to AWS
+   - Creates EC2 instance with Docker and Nginx
+   - Sets up Let's Encrypt SSL certificates (if domain provided)
+   - Configures automatic certificate renewal
+
+3. **Access Your Service**
+   - With domain: `https://your-domain.com`
+   - Without domain: `http://ec2-ip:8080`
+
+#### Architecture in Production:
+
+```
+GitHub → AWS CloudFormation → EC2 Instance → Cloudflare (Optional)
+                               ├── Docker Compose          ↓
+                               │   ├── Go Application      CDN + Security
+                               │   └── Nginx (HTTPS)       ↓
+                               └── Let's Encrypt SSL       Performance
+```
+
+### Alternative Hosting Options:
 
 1. **Railway**: Easy Go app deployment
 2. **Fly.io**: Docker-based deployment
@@ -245,12 +319,13 @@ For your portfolio application, I've implemented **JWT-based authentication** ra
 
 ### Production Checklist:
 
+- [ ] Configure GitHub secrets correctly
+- [ ] Set up domain DNS (if using HTTPS)
 - [ ] Use strong JWT secret (32+ characters)
 - [ ] Use strong authentication password
-- [ ] Enable HTTPS
+- [ ] Enable HTTPS with Let's Encrypt
 - [ ] Set proper CORS origins
 - [ ] Monitor logs and health checks
-- [ ] Secure environment variable storage
 - [ ] Consider rate limiting (add middleware)
 - [ ] Regular API key rotation
 

@@ -60,6 +60,7 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
+// TODO: Encrypt api keys at rest
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {

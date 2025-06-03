@@ -41,6 +41,16 @@ Parameters:
     Type: String
     Description: GitHub repository URL
 
+  DomainName:
+    Type: String
+    Description: Domain name for SSL certificate (e.g., api.yourdomain.com)
+    Default: ""
+
+  SSLEmail:
+    Type: String
+    Description: Email address for Let's Encrypt SSL certificate
+    Default: ""
+
   InstanceType:
     Type: String
     Description: EC2 instance type
@@ -49,6 +59,9 @@ Parameters:
       - t2.micro
       - t2.small
       - t2.medium
+
+Conditions:
+  HasDomainName: !Not [!Equals [!Ref DomainName, ""]]
 
 Resources:
   # Security Group
@@ -71,12 +84,16 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-          Description: HTTPS port
+          Description: HTTPS port (Cloudflare compatible)
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
+          CidrIp: 127.0.0.1/32
+          Description: Application port (internal/localhost only)
+      SecurityGroupEgress:
+        - IpProtocol: -1
           CidrIp: 0.0.0.0/0
-          Description: Application port (internal)
+          Description: All outbound traffic
       Tags:
         - Key: Name
           Value: secrets-service-sg
@@ -174,6 +191,64 @@ Resources:
           CERT_DIR=/opt/secrets-service/backend/certs
           EOF
 
+          # Setup SSL if domain name is provided
+          if [ "${DomainName}" != "" ] && [ "${SSLEmail}" != "" ]; then
+            echo "Setting up SSL for domain: ${DomainName}"
+            
+            # Stop any running containers
+            docker-compose down || true
+            
+            # Obtain Let's Encrypt certificate
+            certbot certonly \
+              --standalone \
+              --preferred-challenges http \
+              --email "${SSLEmail}" \
+              --agree-tos \
+              --no-eff-email \
+              -d "${DomainName}" \
+              --non-interactive
+            
+            # Copy certificates to application directory
+            cp "/etc/letsencrypt/live/${DomainName}/fullchain.pem" "certs/server.crt"
+            cp "/etc/letsencrypt/live/${DomainName}/privkey.pem" "certs/server.key"
+            
+            # Set proper permissions
+            chown -R ec2-user:ec2-user certs
+            chmod 600 certs/server.key
+            chmod 644 certs/server.crt
+            
+            # Create certificate renewal script
+            cat > /opt/secrets-service/renew-certs.sh << 'EOFRENEW'
+          #!/bin/bash
+          set -e
+          cd /opt/secrets-service/backend
+          docker-compose down
+          certbot renew --standalone
+          cp "/etc/letsencrypt/live/${DomainName}/fullchain.pem" "certs/server.crt"
+          cp "/etc/letsencrypt/live/${DomainName}/privkey.pem" "certs/server.key"
+          chown -R ec2-user:ec2-user certs
+          chmod 600 certs/server.key
+          chmod 644 certs/server.crt
+          docker-compose up -d
+          echo "Certificate renewal completed"
+          EOFRENEW
+            
+            chmod +x /opt/secrets-service/renew-certs.sh
+            
+            # Add cron job for automatic renewal
+            (crontab -l 2>/dev/null; echo "0 12,0 * * * /opt/secrets-service/renew-certs.sh >> /var/log/letsencrypt-renewal.log 2>&1") | crontab -
+            
+            echo "SSL setup completed for ${DomainName}"
+          else
+            echo "No domain name provided, skipping SSL setup"
+            # Create self-signed certificates for development
+            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+              -keyout certs/server.key \
+              -out certs/server.crt \
+              -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+            chown -R ec2-user:ec2-user certs
+          fi
+
           # Create management scripts
           cat > /opt/secrets-service/start.sh << 'EOF'
           #!/bin/bash
@@ -246,7 +321,10 @@ Outputs:
 
   ApplicationURL:
     Description: URL of the application
-    Value: !Sub "http://${SecretsServiceInstance.PublicIp}:8080"
+    Value: !If
+      - HasDomainName
+      - !Sub "https://${DomainName}"
+      - !Sub "http://${SecretsServiceInstance.PublicIp}:8080"
     Export:
       Name: !Sub "${AWS::StackName}-ApplicationURL"
 
@@ -255,3 +333,12 @@ Outputs:
     Value: !Sub "ssh -i ${KeyPairName}.pem ec2-user@${SecretsServiceInstance.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}-SSHCommand"
+
+  CloudflareSetupInfo:
+    Description: Information for setting up Cloudflare DNS
+    Value: !If
+      - HasDomainName
+      - !Sub "Create A record: ${DomainName} → ${SecretsServiceInstance.PublicIp} (Enable Cloudflare proxy)"
+      - !Sub "Create A record: yourdomain.com → ${SecretsServiceInstance.PublicIp} (Enable Cloudflare proxy)"
+    Export:
+      Name: !Sub "${AWS::StackName}-CloudflareSetupInfo"
