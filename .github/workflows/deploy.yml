@@ -185,8 +185,22 @@ jobs:
             --query 'Stacks[0].Outputs[?OutputKey==`ApplicationURL`].OutputValue' \
             --output text)
 
+          SSH_COMMAND=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`SSHCommand`].OutputValue' \
+            --output text)
+
+          CLOUDFLARE_SETUP=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`CloudflareSetupInfo`].OutputValue' \
+            --output text)
+
           echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
           echo "application_url=$APPLICATION_URL" >> $GITHUB_OUTPUT
+          echo "ssh_command=$SSH_COMMAND" >> $GITHUB_OUTPUT
+          echo "cloudflare_setup=$CLOUDFLARE_SETUP" >> $GITHUB_OUTPUT
 
       - name: Wait for application to be ready
         run: |
@@ -233,10 +247,14 @@ jobs:
           - **Application**: [${{ steps.outputs.outputs.application_url }}](${{ steps.outputs.outputs.application_url }})
           - **Health Check**: [${{ steps.outputs.outputs.application_url }}/health](${{ steps.outputs.outputs.application_url }}/health)
 
+          ## 🔧 CloudFormation Outputs
+          - **SSH Command**: \`${{ steps.outputs.outputs.ssh_command }}\`
+          - **Cloudflare Setup**: \`${{ steps.outputs.outputs.cloudflare_setup }}\`
+
           ## 🛠 Management Commands
           \`\`\`bash
           # SSH into the instance
-          ssh -i ${{ secrets.AWS_KEY_PAIR_NAME }}.pem ec2-user@${{ steps.outputs.outputs.public_ip }}
+          ${{ steps.outputs.outputs.ssh_command }}
 
           # Check application status
           sudo /opt/secrets-service/status.sh
