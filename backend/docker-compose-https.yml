@@ -3,8 +3,9 @@ version: "3.8"
 services:
   secrets-service:
     build: .
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080" # HTTP port
+      - "8443:8443" # HTTPS port (optional)
     environment:
       - VAULT_ADDR=${VAULT_ADDR}
       - VAULT_TOKEN=${VAULT_TOKEN}
@@ -15,16 +16,23 @@ services:
       - AUTH_PASSWORD=${AUTH_PASSWORD}
       - OPENAI_K=${OPENAI_K}
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - USE_HTTPS=${USE_HTTPS:-false}
+      - TLS_CERT_FILE=${TLS_CERT_FILE:-/opt/certs/server.crt}
+      - TLS_KEY_FILE=${TLS_KEY_FILE:-/opt/certs/server.key}
     env_file:
       - .env
+    volumes:
+      # Mount SSL certificates if using HTTPS
+      - ${CERT_DIR:-./certs}:/opt/certs:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1"]
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider --no-check-certificate ${USE_HTTPS:+https}${USE_HTTPS:-http}://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
+  # Nginx reverse proxy with SSL termination (alternative approach)
   nginx:
     image: nginx:alpine
     ports:
@@ -36,3 +44,5 @@ services:
     depends_on:
       - secrets-service
     restart: unless-stopped
+    profiles:
+      - with-nginx

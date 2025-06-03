@@ -63,10 +63,20 @@ Resources:
           CidrIp: 0.0.0.0/0
           Description: SSH access
         - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP port (redirects to HTTPS)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS port
+        - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
           CidrIp: 0.0.0.0/0
-          Description: Application port
+          Description: Application port (internal)
       Tags:
         - Key: Name
           Value: secrets-service-sg
@@ -135,6 +145,10 @@ Resources:
           unzip awscliv2.zip
           ./aws/install
 
+          # Install certbot for Let's Encrypt
+          yum install -y python3-pip
+          pip3 install certbot
+
           # Create application directory
           mkdir -p /opt/secrets-service
           cd /opt/secrets-service
@@ -142,6 +156,9 @@ Resources:
           # Clone repository
           git clone ${GitHubRepo} .
           cd backend
+
+          # Create certificates directory
+          mkdir -p certs
 
           # Create environment file
           cat > .env << EOF
@@ -152,8 +169,9 @@ Resources:
           ALLOWED_ORIGIN=${AllowedOrigins}
           AUTH_USERNAME=${AuthUsername}
           AUTH_PASSWORD=${AuthPassword}
-          OPENAI_API_KEY=${OpenAIAPIKey}
+          OPENAI_K=${OpenAIAPIKey}
           FIREBASE_API_KEY=${FirebaseAPIKey}
+          CERT_DIR=/opt/secrets-service/backend/certs
           EOF
 
           # Create management scripts

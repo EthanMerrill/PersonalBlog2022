@@ -6,17 +6,21 @@ A secure Go-based Backend for Frontend (BFF) service that manages API keys throu
 
 - **Secure Authentication**: JWT-based authentication to protect API endpoints
 - **Environment Variable Management**: Simple and secure API key storage using environment variables
+- **Nginx Reverse Proxy**: HTTPS termination handled by Nginx for better performance and security
 - **CORS Support**: Configured for your frontend domain
-- **Containerized**: Docker and Docker Compose support
+- **Containerized**: Docker and Docker Compose support with Nginx integration
 - **Health Checks**: Built-in health monitoring
+- **Production Ready**: Let's Encrypt integration via Nginx
 - **Simplified Setup**: No external secret management service required
 
 ## Architecture
 
-This service follows the Backend for Frontend (BFF) pattern:
+This service uses **Nginx reverse proxy** for HTTPS termination:
 
 ```
-Frontend (Vite) → Secrets Service (Go) → Environment Variables
+Frontend (Vite) → [HTTPS] → Nginx → [HTTP] → Go Service → Environment Variables
+                     ↓              ↓
+              SSL/TLS Encryption   Load Balancing & Security Headers
 ```
 
 Benefits:
@@ -24,6 +28,8 @@ Benefits:
 - API keys never exposed to the client
 - Simple environment-based secret management
 - Secure authentication layer
+- **HTTPS encryption** handled efficiently by Nginx
+- Better performance with Nginx handling static content and SSL termination
 - CORS protection
 - Easy deployment to any hosting platform
 
@@ -58,7 +64,31 @@ OPENAI_K=sk-your-openai-api-key-here
 FIREBASE_API_KEY=your-firebase-api-key-here
 ```
 
-### 2. API Key Management
+### 2. HTTPS Configuration (Production)
+
+The service uses **Nginx reverse proxy** for HTTPS termination. The Go application runs as a simple HTTP service behind Nginx.
+
+#### Architecture:
+
+```
+Internet → Nginx (HTTPS) → Go App (HTTP)
+```
+
+#### Setup Let's Encrypt SSL Certificates:
+
+```bash
+# On your EC2 instance
+sudo ./setup-letsencrypt.sh api.yourdomain.com your-email@domain.com
+```
+
+The Nginx configuration automatically:
+
+- Redirects HTTP to HTTPS
+- Handles SSL certificate management
+- Proxies requests to the Go application
+- Adds security headers
+
+### 3. API Key Management
 
 The service reads API keys directly from environment variables:
 
@@ -66,26 +96,24 @@ The service reads API keys directly from environment variables:
 - `FIREBASE_API_KEY`: Your Firebase API key (optional)
 - Add more keys as needed by updating the Config struct and handlers
 
-### 3. Running the Service
+### 4. Running the Service
 
-#### Using Docker Compose (Recommended)
+#### Using Docker Compose with Nginx (Recommended for Production)
 
-```bash
-docker-compose up -d
-```
-
-#### Using Docker
-
-```bash
-docker build -t secrets-service .
-docker run -p 8080:8080 --env-file .env secrets-service
-```
-
-#### Local Development
+````bash
+# Start both Go app and Nginx
+#### Local Development (HTTP only)
 
 ```bash
 go mod tidy
 go run main.go
+````
+
+#### Production with Docker and Nginx
+
+```bash
+# Start both Go app and Nginx with SSL certificates
+CERT_DIR=./certs docker-compose up -d
 ```
 
 ## API Endpoints
