@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import {defineConfig} from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -65,5 +66,14 @@ export default defineConfig({
         ".js": "jsx",
       },
     },
+  },
+  // Test configuration
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/setup-tests.ts",
+    css: true,
+    // Handle JSX in .js files
+    include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
   },
 });
