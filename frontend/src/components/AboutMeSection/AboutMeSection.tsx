@@ -43,8 +43,8 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
                 // Auto-authenticate if not already authenticated
                 if (!secretsService.isAuthenticated()) {
                     const success = await secretsService.authenticate({
-                        username: import.meta.env.VITE_SECRETES_SERVICE_USERNAME || 'admin',
-                        password: import.meta.env.VITE_SECRETES_SERVICE_PASSWORD || 'changeme_strong_password'
+                        username: import.meta.env.VITE_SECRETS_SERVICE_USERNAME || 'admin',
+                        password: import.meta.env.VITE_SECRETS_SERVICE_PASSWORD || 'changeme_strong_password'
                     });
 
                     if (!success || !isMounted) {
