@@ -85,7 +85,11 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
           Description: HTTPS port (Cloudflare compatible)
-
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 127.0.0.1/32
+          Description: Application port (internal/localhost only)
       Tags:
         - Key: Name
           Value: secrets-service-sg
@@ -316,7 +320,7 @@ Outputs:
     Value: !If
       - HasDomainName
       - !Sub "https://${DomainName}"
-      - !Sub "https://${SecretsServiceInstance.PublicIp}"
+      - !Sub "http://${SecretsServiceInstance.PublicIp}:8080"
     Export:
       Name: !Sub "${AWS::StackName}-ApplicationURL"
 

@@ -13,7 +13,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  STACK_NAME: secrets-service-production
+  STACK_NAME: secrets-service
 
 jobs:
   test:
@@ -86,7 +86,7 @@ jobs:
               INSTANCE_ID=$(aws cloudformation describe-stack-resources \
                 --stack-name ${{ env.STACK_NAME }} \
                 --region ${{ env.AWS_REGION }} \
-                --logical-resource-id "SecretsServiceInstance" \
+                --logical-resource-id "EC2Instance" \
                 --query 'StackResources[0].PhysicalResourceId' \
                 --output text 2>/dev/null || echo "")
               
