@@ -88,8 +88,8 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
-          CidrIp: 127.0.0.1/32
-          Description: Application port (internal/localhost only)
+          CidrIp: 172.16.0.0/12
+          Description: Application port (Docker network access only)
       Tags:
         - Key: Name
           Value: secrets-service-sg
@@ -175,8 +175,6 @@ Resources:
 
           # Create environment file
           cat > .env << EOF
-          VAULT_ADDR=http://localhost:8200
-          VAULT_TOKEN=dev-token
           JWT_SECRET=${JWTSecret}
           PORT=8080
           ALLOWED_ORIGIN=${AllowedOrigins}
@@ -185,6 +183,7 @@ Resources:
           OPENAI_K=${OpenAIAPIKey}
           FIREBASE_API_KEY=${FirebaseAPIKey}
           CERT_DIR=/opt/secrets-service/backend/certs
+          USE_HTTPS=false
           EOF
 
           # Setup SSL if domain name is provided
@@ -282,7 +281,16 @@ Resources:
           chmod +x /opt/secrets-service/*.sh
 
           # Start the application
-          /opt/secrets-service/start.sh
+          cd /opt/secrets-service/backend
+
+          # Ensure proper permissions
+          chown -R ec2-user:ec2-user /opt/secrets-service
+
+          # Start Docker Compose with proper user
+          su -c "docker-compose up -d" ec2-user
+
+          # Wait for services to be ready
+          sleep 30
 
           # Create systemd service for auto-restart
           cat > /etc/systemd/system/secrets-service.service << 'EOF'
