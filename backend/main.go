@@ -60,6 +60,7 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
+// TODO: Encrypt api keys at rest
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
@@ -132,6 +133,7 @@ func main() {
 
 	handler := c.Handler(router)
 
+	// HTTP server (HTTPS will be handled by Nginx reverse proxy)
 	log.Printf("Server starting on port %s, listening at http://localhost:%s", config.Port, config.Port)
 	log.Printf("Allowed origins: %s", config.AllowedOrigins)
 	log.Fatal(http.ListenAndServe(":"+config.Port, handler))

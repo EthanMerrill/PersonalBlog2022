@@ -1,10 +1,14 @@
 version: "3.8"
 
+networks:
+  app-network:
+    driver: bridge
+
 services:
   secrets-service:
     build: .
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
       - VAULT_ADDR=${VAULT_ADDR}
       - VAULT_TOKEN=${VAULT_TOKEN}
@@ -18,9 +22,25 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks:
+      - app-network
     healthcheck:
       test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${CERT_DIR:-./certs}:/etc/ssl/certs:ro
+    depends_on:
+      - secrets-service
+    restart: unless-stopped
+    networks:
+      - app-network
