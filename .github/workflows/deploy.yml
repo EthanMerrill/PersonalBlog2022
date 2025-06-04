@@ -86,7 +86,7 @@ jobs:
               INSTANCE_ID=$(aws cloudformation describe-stack-resources \
                 --stack-name ${{ env.STACK_NAME }} \
                 --region ${{ env.AWS_REGION }} \
-                --logical-resource-id "EC2Instance" \
+                --logical-resource-id "SecretsServiceInstance" \
                 --query 'StackResources[0].PhysicalResourceId' \
                 --output text 2>/dev/null || echo "")
               
