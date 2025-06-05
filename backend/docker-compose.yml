@@ -3,8 +3,9 @@ version: "3.8"
 services:
   secrets-service:
     build: .
-    ports:
-      - "8080:8080"
+    # Remove direct port exposure - only nginx will be exposed
+    expose:
+      - "8080"
     environment:
       - VAULT_ADDR=${VAULT_ADDR}
       - VAULT_TOKEN=${VAULT_TOKEN}
@@ -13,7 +14,7 @@ services:
       - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
       - AUTH_USERNAME=${AUTH_USERNAME}
       - AUTH_PASSWORD=${AUTH_PASSWORD}
-      - OPENAI_K=${OPENAI_K}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
     env_file:
       - .env
@@ -24,3 +25,31 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    networks:
+      - app-network
+
+  nginx:
+    build:
+      context: .
+      dockerfile: dockerfile.nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - secrets-service
+    restart: unless-stopped
+    volumes:
+      # Mount nginx logs (only mount logs, not SSL certs for development)
+      - ./logs/nginx:/var/log/nginx
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

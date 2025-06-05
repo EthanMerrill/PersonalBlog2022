@@ -25,6 +25,17 @@ Parameters:
     Description: Allowed CORS origins
     Default: "*"
 
+  Domain:
+    Type: String
+    Description: Domain name for the application (e.g., api.yourdomain.com)
+    Default: ""
+
+  CloudflareAPIToken:
+    Type: String
+    Description: Cloudflare API Token for SSL certificate management
+    NoEcho: true
+    Default: ""
+
   OpenAIAPIKey:
     Type: String
     Description: OpenAI API Key
@@ -55,7 +66,7 @@ Resources:
   SecretsServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for Secrets Service
+      GroupDescription: Security group for Secrets Service with Nginx Reverse Proxy
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -63,10 +74,15 @@ Resources:
           CidrIp: 0.0.0.0/0
           Description: SSH access
         - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
+          FromPort: 80
+          ToPort: 80
           CidrIp: 0.0.0.0/0
-          Description: Application port
+          Description: HTTP (Nginx reverse proxy)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS (Nginx reverse proxy)
       Tags:
         - Key: Name
           Value: secrets-service-sg
@@ -143,6 +159,9 @@ Resources:
           git clone ${GitHubRepo} .
           cd backend
 
+          # Create SSL directory for certificates
+          mkdir -p ssl logs/nginx
+
           # Create environment file
           cat > .env << EOF
           VAULT_ADDR=http://localhost:8200
@@ -154,64 +173,92 @@ Resources:
           AUTH_PASSWORD=${AuthPassword}
           OPENAI_API_KEY=${OpenAIAPIKey}
           FIREBASE_API_KEY=${FirebaseAPIKey}
+          DOMAIN=${Domain}
+          CLOUDFLARE_API_TOKEN=${CloudflareAPIToken}
           EOF
 
-          # Create management scripts
+          # Make deployment scripts executable
+          chmod +x /opt/secrets-service/backend/deploy-nginx.sh
+          chmod +x /opt/secrets-service/backend/ssl-setup.sh
+
+          # Create management scripts (legacy compatibility)
           cat > /opt/secrets-service/start.sh << 'EOF'
           #!/bin/bash
           cd /opt/secrets-service/backend
-          docker-compose up -d
+          ./deploy-nginx.sh start
           EOF
 
           cat > /opt/secrets-service/stop.sh << 'EOF'
           #!/bin/bash
           cd /opt/secrets-service/backend
-          docker-compose down
+          ./deploy-nginx.sh stop
           EOF
 
           cat > /opt/secrets-service/restart.sh << 'EOF'
           #!/bin/bash
           cd /opt/secrets-service/backend
-          docker-compose down
-          git pull origin main
-          docker-compose up -d --build
+          ./deploy-nginx.sh restart
           EOF
 
           cat > /opt/secrets-service/status.sh << 'EOF'
           #!/bin/bash
           cd /opt/secrets-service/backend
-          docker-compose ps
+          ./deploy-nginx.sh status
           EOF
 
           cat > /opt/secrets-service/logs.sh << 'EOF'
           #!/bin/bash
           cd /opt/secrets-service/backend
-          docker-compose logs -f
+          ./deploy-nginx.sh logs
+          EOF
+
+          cat > /opt/secrets-service/update.sh << 'EOF'
+          #!/bin/bash
+          cd /opt/secrets-service/backend
+          ./deploy-nginx.sh update
+          EOF
+
+          cat > /opt/secrets-service/health.sh << 'EOF'
+          #!/bin/bash
+          cd /opt/secrets-service/backend
+          ./deploy-nginx.sh health
           EOF
 
           # Make scripts executable
           chmod +x /opt/secrets-service/*.sh
 
-          # Start the application
-          /opt/secrets-service/start.sh
+          # Deploy the application with nginx reverse proxy
+          cd /opt/secrets-service/backend
+          ./deploy-nginx.sh deploy
 
-          # Create systemd service for auto-restart
+          # Wait a moment for services to start
+          sleep 30
+
+          # Display deployment status
+          ./deploy-nginx.sh status
+
+          # Create systemd service for auto-restart with nginx support
           cat > /etc/systemd/system/secrets-service.service << 'EOF'
           [Unit]
-          Description=Secrets Service
+          Description=Secrets Service with Nginx Reverse Proxy
           Requires=docker.service
-          After=docker.service
+          After=docker.service network.target
 
           [Service]
           Type=oneshot
           RemainAfterExit=yes
-          ExecStart=/opt/secrets-service/start.sh
-          ExecStop=/opt/secrets-service/stop.sh
+          ExecStart=/opt/secrets-service/backend/deploy-nginx.sh start
+          ExecStop=/opt/secrets-service/backend/deploy-nginx.sh stop
+          ExecReload=/opt/secrets-service/backend/deploy-nginx.sh restart
+          WorkingDirectory=/opt/secrets-service/backend
+          User=root
+          Group=root
 
           [Install]
           WantedBy=multi-user.target
           EOF
 
+          systemctl daemon-reload
           systemctl enable secrets-service
           systemctl start secrets-service
 
@@ -227,13 +274,29 @@ Outputs:
       Name: !Sub "${AWS::StackName}-PublicIP"
 
   ApplicationURL:
-    Description: URL of the application
-    Value: !Sub "http://${SecretsServiceInstance.PublicIp}:8080"
+    Description: URL of the application (HTTP)
+    Value: !Sub "http://${SecretsServiceInstance.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}-ApplicationURL"
+
+  ApplicationHTTPSURL:
+    Description: URL of the application (HTTPS)
+    Value: !Sub "https://${SecretsServiceInstance.PublicIp}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationHTTPSURL"
+
+  DomainURL:
+    Description: Domain URL (if domain is configured)
+    Value: !Sub "https://${Domain}"
+    Export:
+      Name: !Sub "${AWS::StackName}-DomainURL"
+    Condition: DomainProvided
 
   SSHCommand:
     Description: SSH command to connect to the instance
     Value: !Sub "ssh -i ${KeyPairName}.pem ec2-user@${SecretsServiceInstance.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}-SSHCommand"
+
+Conditions:
+  DomainProvided: !Not [!Equals [!Ref Domain, ""]]
