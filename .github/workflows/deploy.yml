@@ -188,31 +188,6 @@ jobs:
             echo "needs_recreation=false" >> $GITHUB_OUTPUT
             echo "Stack ${{ env.STACK_NAME }} does not exist"
           fi
-                echo "instance_state=$INSTANCE_STATE" >> $GITHUB_OUTPUT
-                echo "EC2 Instance ID: $INSTANCE_ID"
-                echo "EC2 Instance State: $INSTANCE_STATE"
-                
-                # Check if instance is terminated or terminating
-                if [[ "$INSTANCE_STATE" == "terminated" ]] || [[ "$INSTANCE_STATE" == "terminating" ]] || [[ "$INSTANCE_STATE" == "not-found" ]]; then
-                  echo "needs_recreation=true" >> $GITHUB_OUTPUT
-                  echo "EC2 instance is terminated/terminating or not found - stack needs recreation"
-                else
-                  echo "needs_recreation=false" >> $GITHUB_OUTPUT
-                  echo "EC2 instance is in acceptable state: $INSTANCE_STATE"
-                fi
-              else
-                echo "needs_recreation=true" >> $GITHUB_OUTPUT
-                echo "Could not find EC2 instance in stack - stack needs recreation"
-              fi
-            else
-              echo "needs_recreation=false" >> $GITHUB_OUTPUT
-              echo "Stack is in transitional state, will attempt update"
-            fi
-          else
-            echo "stack_exists=false" >> $GITHUB_OUTPUT
-            echo "needs_recreation=false" >> $GITHUB_OUTPUT
-            echo "Stack ${{ env.STACK_NAME }} does not exist"
-          fi
 
       - name: Delete failed stack or recreate for terminated instance
         if: steps.check-stack.outputs.needs_recreation == 'true'
