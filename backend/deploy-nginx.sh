@@ -47,6 +47,209 @@ check_docker() {
     fi
 }
 
+# Setup SSL certificates based on environment
+setup_ssl_certificates() {
+    log "Setting up SSL certificates..."
+    
+    # Source environment variables
+    if [ -f ".env" ]; then
+        set -a
+        source .env
+        set +a
+    fi
+    
+    # Check if SSL setup script exists
+    if [ ! -f "./ssl-setup.sh" ]; then
+        error "SSL setup script not found at ./ssl-setup.sh"
+        exit 1
+    fi
+    
+    # Make SSL setup script executable
+    chmod +x ./ssl-setup.sh
+    
+    # Run automatic SSL setup
+    log "Running automatic SSL certificate setup..."
+    if ./ssl-setup.sh auto; then
+        log "✅ SSL certificates configured successfully"
+        # Enable SSL server block in nginx configuration
+        enable_ssl_in_nginx
+    else
+        warn "SSL certificate setup failed. HTTPS will not be available."
+        warn "The application will run with HTTP only."
+    fi
+}
+
+# Enable SSL server block in nginx configuration
+enable_ssl_in_nginx() {
+    log "Enabling SSL server block in nginx configuration..."
+    
+    # Check if SSL certificates exist
+    if [ -f "./ssl/certs/fullchain.pem" ] && [ -f "./ssl/private/privkey.pem" ]; then
+        # Create a backup of the original nginx.conf
+        cp nginx.conf nginx.conf.backup
+        
+        # Create SSL-enabled nginx configuration
+        cat > nginx.conf << 'EOF'
+# nginx.conf - Production-ready reverse proxy configuration with SSL
+events {
+    worker_connections 1024;
+}
+
+http {
+    # Use Docker's internal DNS resolver
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    
+    # Define backend variable for dynamic resolution
+    map $uri $backend_server {
+        default secrets-service:8080;
+    }
+
+    # Rate limiting
+    limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+
+    # SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384;
+    ssl_prefer_server_ciphers off;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+
+    # HTTP server - redirect to HTTPS
+    server {
+        listen 80;
+        server_name _;
+
+        # Health check endpoint (allow HTTP for load balancer)
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        # Redirect all other HTTP traffic to HTTPS
+        location / {
+            return 301 https://$server_name$request_uri;
+        }
+    }
+
+    # HTTPS server
+    server {
+        listen 443 ssl;
+        http2 on;
+        server_name _;
+
+        # SSL certificate paths
+        ssl_certificate /etc/ssl/certs/fullchain.pem;
+        ssl_certificate_key /etc/ssl/private/privkey.pem;
+
+        # SSL session settings
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+
+        # Security headers
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Frame-Options DENY;
+        add_header X-Content-Type-Options nosniff;
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        # Main application proxy
+        location / {
+            limit_req zone=api burst=20 nodelay;
+
+            proxy_pass http://$backend_server;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-Host $host;
+
+            # Cloudflare headers
+            proxy_set_header CF-Connecting-IP $http_cf_connecting_ip;
+            proxy_set_header CF-Ray $http_cf_ray;
+            proxy_set_header CF-Visitor $http_cf_visitor;
+
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+
+            proxy_buffering on;
+            proxy_buffer_size 4k;
+            proxy_buffers 8 4k;
+            proxy_busy_buffers_size 8k;
+
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+        }
+
+        # Static file serving with caching
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+            proxy_pass http://$backend_server;
+            proxy_set_header Host $host;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # API routes with specific rate limiting
+        location /api/ {
+            limit_req zone=api burst=10 nodelay;
+            
+            proxy_pass http://$backend_server;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+        }
+    }
+
+    # Connection upgrade mapping for WebSockets
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+}
+EOF
+        
+        log "✅ SSL-enabled nginx configuration created"
+        
+        # Validate the nginx configuration
+        if docker run --rm -v "$PWD/nginx.conf:/etc/nginx/nginx.conf:ro" nginx:alpine nginx -t >/dev/null 2>&1; then
+            log "✅ Nginx configuration is valid"
+        else
+            warn "Nginx configuration validation failed. Restoring backup..."
+            mv nginx.conf.backup nginx.conf
+            error "Failed to create SSL-enabled nginx configuration"
+            return 1
+        fi
+    else
+        warn "SSL certificates not found. SSL server block will remain disabled."
+        return 1
+    fi
+}
+
 # Deploy the application
 deploy() {
     log "Starting nginx reverse proxy deployment..."
@@ -67,6 +270,9 @@ deploy() {
             exit 1
         fi
     fi
+    
+    # Setup SSL certificates before starting nginx
+    setup_ssl_certificates
     
     log "Building Docker images..."
     docker-compose build --no-cache
@@ -169,6 +375,30 @@ status() {
     echo "HTTPS (443): $(netstat -ln | grep ':443 ' | wc -l | tr -d ' ') listener(s)"
     
     echo ""
+    echo "=== SSL Certificate Status ==="
+    if [ -f "./ssl/certs/fullchain.pem" ] && [ -f "./ssl/private/privkey.pem" ]; then
+        echo -e "SSL Certificates: ${GREEN}✅ FOUND${NC}"
+        
+        # Check certificate expiration
+        if command -v openssl >/dev/null 2>&1; then
+            cert_expiry=$(openssl x509 -in "./ssl/certs/fullchain.pem" -noout -enddate 2>/dev/null | cut -d= -f2)
+            if [ -n "$cert_expiry" ]; then
+                echo "Certificate expires: $cert_expiry"
+            fi
+        fi
+        
+        # Check if HTTPS is responding
+        if curl -f -s -k --connect-timeout 5 https://localhost/health >/dev/null 2>&1; then
+            echo -e "HTTPS Health: ${GREEN}✅ RESPONDING${NC}"
+        else
+            echo -e "HTTPS Health: ${YELLOW}⚠️ NOT RESPONDING${NC}"
+        fi
+    else
+        echo -e "SSL Certificates: ${RED}❌ NOT FOUND${NC}"
+        echo -e "HTTPS Health: ${RED}❌ UNAVAILABLE${NC}"
+    fi
+    
+    echo ""
     echo "=== Resource Usage ==="
     docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" $(docker-compose ps -q) 2>/dev/null || echo "No containers running"
 }
@@ -259,6 +489,53 @@ clean() {
     log "Cleanup completed"
 }
 
+# SSL certificate management
+ssl() {
+    log "SSL certificate management..."
+    
+    if [ ! -f "./ssl-setup.sh" ]; then
+        error "SSL setup script not found at ./ssl-setup.sh"
+        exit 1
+    fi
+    
+    chmod +x ./ssl-setup.sh
+    
+    case "${1:-status}" in
+        setup|install)
+            ./ssl-setup.sh auto
+            if [ $? -eq 0 ]; then
+                log "SSL certificates configured. Updating nginx configuration..."
+                enable_ssl_in_nginx
+                log "Restarting nginx to apply SSL configuration..."
+                restart
+            fi
+            ;;
+        check|status)
+            ./ssl-setup.sh status
+            ;;
+        renew)
+            ./ssl-setup.sh renew
+            if [ $? -eq 0 ]; then
+                log "SSL certificates renewed. Restarting nginx..."
+                restart
+            fi
+            ;;
+        remove)
+            ./ssl-setup.sh remove
+            log "SSL certificates removed. Consider restarting nginx with HTTP-only config."
+            ;;
+        *)
+            echo "Usage: $0 ssl {setup|check|renew|remove}"
+            echo ""
+            echo "Commands:"
+            echo "  setup    - Set up SSL certificates automatically"
+            echo "  check    - Check SSL certificate status"
+            echo "  renew    - Renew SSL certificates"
+            echo "  remove   - Remove SSL certificates"
+            ;;
+    esac
+}
+
 # Show help
 help() {
     echo "nginx reverse proxy deployment script"
@@ -274,6 +551,7 @@ help() {
     echo "  logs      Show service logs (optionally specify service name)"
     echo "  update    Update and restart the deployment"
     echo "  health    Run health checks"
+    echo "  ssl       SSL certificate management (setup|check|renew|remove)"
     echo "  clean     Clean up all containers and volumes"
     echo "  help      Show this help message"
     echo ""
@@ -281,6 +559,8 @@ help() {
     echo "  $0 deploy"
     echo "  $0 logs nginx"
     echo "  $0 logs secrets-service"
+    echo "  $0 ssl setup"
+    echo "  $0 ssl check"
     echo "  $0 status"
 }
 
@@ -310,6 +590,9 @@ main() {
             ;;
         health)
             health
+            ;;
+        ssl)
+            ssl "$2"
             ;;
         clean)
             clean

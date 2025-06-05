@@ -72,7 +72,7 @@ generate_self_signed() {
     validate_certificate
 }
 
-# Setup Cloudflare SSL (placeholder for future implementation)
+# Setup Cloudflare SSL certificate
 setup_cloudflare_ssl() {
     local domain="$1"
     local api_token="$2"
@@ -82,9 +82,140 @@ setup_cloudflare_ssl() {
         return 1
     fi
     
-    warn "Cloudflare SSL setup is not yet implemented"
-    warn "Using self-signed certificate instead"
-    generate_self_signed "$domain"
+    log "Setting up Cloudflare SSL certificate for domain: $domain"
+    create_ssl_dirs
+    
+    # Check if we can reach Cloudflare API
+    if ! command -v curl >/dev/null 2>&1; then
+        error "curl is required for Cloudflare SSL setup"
+        return 1
+    fi
+    
+    # Test API token
+    log "Validating Cloudflare API token..."
+    local token_test=$(curl -s -X GET "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+        -H "Authorization: Bearer $api_token" \
+        -H "Content-Type: application/json")
+    
+    if ! echo "$token_test" | grep -q '"success":true'; then
+        error "Invalid Cloudflare API token or API unreachable"
+        warn "Falling back to self-signed certificate"
+        generate_self_signed "$domain"
+        return 1
+    fi
+    
+    log "✅ Cloudflare API token is valid"
+    
+    # Get zone ID for the domain
+    local zone_name=$(echo "$domain" | sed 's/^[^.]*\.//')
+    log "Looking up zone ID for: $zone_name"
+    
+    local zone_response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$zone_name" \
+        -H "Authorization: Bearer $api_token" \
+        -H "Content-Type: application/json")
+    
+    local zone_id=$(echo "$zone_response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    
+    if [ -z "$zone_id" ]; then
+        error "Could not find Cloudflare zone for domain: $zone_name"
+        warn "Make sure the domain is managed by Cloudflare and the API token has Zone:Read permissions"
+        warn "Falling back to self-signed certificate"
+        generate_self_signed "$domain"
+        return 1
+    fi
+    
+    log "✅ Found zone ID: $zone_id"
+    
+    # Generate Cloudflare Origin Certificate
+    log "Generating Cloudflare Origin Certificate..."
+    
+    # Create certificate signing request
+    local csr_config=$(mktemp)
+    cat > "$csr_config" << EOF
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = US
+ST = CA
+L = San Francisco
+O = Cloudflare Origin
+CN = $domain
+
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = $domain
+DNS.2 = *.$zone_name
+EOF
+    
+    # Generate private key
+    log "Generating private key..."
+    openssl genrsa -out "$KEY_FILE" 2048
+    chmod 600 "$KEY_FILE"
+    
+    # Generate CSR
+    local csr_file=$(mktemp)
+    openssl req -new -key "$KEY_FILE" -out "$csr_file" -config "$csr_config"
+    
+    # Read CSR content
+    local csr_content=$(cat "$csr_file" | tr -d '\n' | sed 's/-----BEGIN CERTIFICATE REQUEST-----//g' | sed 's/-----END CERTIFICATE REQUEST-----//g' | tr -d ' ')
+    
+    # Request Cloudflare Origin Certificate
+    log "Requesting Cloudflare Origin Certificate..."
+    local cert_request=$(cat << EOF
+{
+    "type": "origin-rsa",
+    "csr": "$csr_content",
+    "hostnames": ["$domain", "*.$zone_name"],
+    "requested_validity": 5475
+}
+EOF
+)
+    
+    local cert_response=$(curl -s -X POST "https://api.cloudflare.com/client/v4/certificates" \
+        -H "Authorization: Bearer $api_token" \
+        -H "Content-Type: application/json" \
+        -d "$cert_request")
+    
+    # Extract certificate from response
+    local certificate=$(echo "$cert_response" | grep -o '"certificate":"[^"]*"' | cut -d'"' -f4 | sed 's/\\n/\n/g')
+    
+    if [ -z "$certificate" ]; then
+        error "Failed to get certificate from Cloudflare"
+        error "Response: $cert_response"
+        warn "Falling back to self-signed certificate"
+        generate_self_signed "$domain"
+        return 1
+    fi
+    
+    # Save certificate
+    echo "$certificate" > "$CERT_FILE"
+    chmod 644 "$CERT_FILE"
+    
+    # Clean up temporary files
+    rm -f "$csr_config" "$csr_file"
+    
+    log "✅ Cloudflare Origin Certificate generated successfully"
+    
+    # Validate the certificate
+    if validate_certificate; then
+        log "✅ Certificate validation passed"
+        
+        # Show certificate details
+        log "Certificate details:"
+        openssl x509 -in "$CERT_FILE" -text -noout | grep -E "(Subject:|DNS:|Not Before|Not After)" || true
+        
+        return 0
+    else
+        error "Certificate validation failed"
+        return 1
+    fi
 }
 
 # Install existing certificate
@@ -185,19 +316,20 @@ check_expiration() {
     fi
 }
 
-# Renew certificate (currently only supports self-signed)
+# Renew certificate (supports both self-signed and Cloudflare)
 renew_certificate() {
     log "Renewing SSL certificate..."
     
     if [ ! -f "$CERT_FILE" ]; then
-        warn "No existing certificate found. Generating new self-signed certificate..."
-        generate_self_signed
-        return 0
+        warn "No existing certificate found. Running auto setup..."
+        auto_setup
+        return $?
     fi
     
     # Get the subject from existing certificate
     local subject=$(openssl x509 -noout -subject -in "$CERT_FILE" | sed 's/subject=//')
     local cn=$(echo "$subject" | grep -o 'CN=[^,]*' | cut -d= -f2)
+    local issuer=$(openssl x509 -noout -issuer -in "$CERT_FILE" | sed 's/issuer=//')
     
     # Backup existing certificate
     local backup_suffix=$(date +%Y%m%d_%H%M%S)
@@ -206,10 +338,37 @@ renew_certificate() {
     
     log "Backed up existing certificate to: $CERT_FILE.backup_$backup_suffix"
     
-    # Generate new certificate
-    generate_self_signed "${cn:-localhost}"
+    # Determine renewal method based on issuer
+    if echo "$issuer" | grep -q "Cloudflare"; then
+        log "Detected Cloudflare certificate. Attempting Cloudflare renewal..."
+        
+        # Load environment variables if .env exists
+        if [ -f ".env" ]; then
+            source .env
+        fi
+        
+        if [ -n "$DOMAIN" ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            log "Renewing Cloudflare certificate for: $DOMAIN"
+            if setup_cloudflare_ssl "$DOMAIN" "$CLOUDFLARE_API_TOKEN"; then
+                log "✅ Cloudflare certificate renewed successfully"
+                return 0
+            else
+                warn "Cloudflare renewal failed. Falling back to self-signed certificate."
+            fi
+        else
+            warn "DOMAIN or CLOUDFLARE_API_TOKEN not found. Falling back to self-signed certificate."
+        fi
+    fi
     
-    log "✅ Certificate renewed successfully"
+    # Generate new self-signed certificate (fallback or default)
+    log "Generating new self-signed certificate for: ${cn:-localhost}"
+    if generate_self_signed "${cn:-localhost}"; then
+        log "✅ Self-signed certificate renewed successfully"
+        return 0
+    else
+        error "Certificate renewal failed"
+        return 1
+    fi
 }
 
 # Remove SSL certificates
@@ -292,7 +451,7 @@ help() {
     echo "Commands:"
     echo "  auto                    Automatic SSL setup based on environment"
     echo "  self-signed [domain]    Generate self-signed certificate (default: localhost)"
-    echo "  cloudflare <domain> <token>  Setup Cloudflare SSL (future implementation)"
+    echo "  cloudflare <domain> <token>  Setup Cloudflare Origin Certificate"
     echo "  install <cert> <key>    Install existing certificate files"
     echo "  validate               Validate existing certificates"
     echo "  check                  Check certificate expiration"
