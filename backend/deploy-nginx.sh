@@ -259,15 +259,33 @@ deploy() {
     # Create necessary directories
     mkdir -p logs/nginx ssl
     
-    # Ensure .env file exists
+    # Ensure .env file exists or create minimal one for Docker Compose
     if [ ! -f ".env" ]; then
-        warn ".env file not found. Creating from example..."
+        warn ".env file not found."
         if [ -f ".env.example" ]; then
+            log "Creating .env from .env.example..."
             cp .env.example .env
             warn "Please update .env file with your actual values"
         else
-            error ".env.example file not found. Cannot create .env file."
-            exit 1
+            log "Creating minimal .env file for Docker Compose compatibility..."
+            # Create a minimal .env file with default values
+            # Environment variables from the system (e.g., CloudFormation, GitHub Actions) will override these
+            cat > .env << EOF
+# Minimal .env file for Docker Compose compatibility
+# System environment variables will override these values
+VAULT_ADDR=
+VAULT_TOKEN=
+JWT_SECRET=${JWT_SECRET:-changeme}
+PORT=8080
+ALLOWED_ORIGIN=${ALLOWED_ORIGIN:-*}
+AUTH_USERNAME=${AUTH_USERNAME:-admin}
+AUTH_PASSWORD=${AUTH_PASSWORD:-changeme}
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+FIREBASE_API_KEY=${FIREBASE_API_KEY:-}
+DOMAIN=${DOMAIN:-}
+CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+EOF
+            log "✅ Created minimal .env file. System environment variables will be used."
         fi
     fi
     
