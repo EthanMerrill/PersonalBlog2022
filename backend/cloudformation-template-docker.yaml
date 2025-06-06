@@ -25,6 +25,17 @@ Parameters:
     Description: Allowed CORS origins
     Default: "*"
 
+  Domain:
+    Type: String
+    Description: Domain name for the application (e.g., api.yourdomain.com)
+    Default: ""
+
+  CloudflareAPIToken:
+    Type: String
+    Description: Cloudflare API Token for SSL certificate management
+    NoEcho: true
+    Default: ""
+
   OpenAIAPIKey:
     Type: String
     Description: OpenAI API Key
@@ -55,7 +66,7 @@ Resources:
   SecretsServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for Secrets Service
+      GroupDescription: Security group for Secrets Service with Nginx Reverse Proxy
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -63,10 +74,15 @@ Resources:
           CidrIp: 0.0.0.0/0
           Description: SSH access
         - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
+          FromPort: 80
+          ToPort: 80
           CidrIp: 0.0.0.0/0
-          Description: Application port
+          Description: HTTP (Nginx reverse proxy)
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS (Nginx reverse proxy)
       Tags:
         - Key: Name
           Value: secrets-service-sg
@@ -117,104 +133,239 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          yum update -y
+           echo "=== STARTING DEPLOYMENT SCRIPT: $(date) ===" > /var/log/user-data.log 2>&1
+           exec > >(tee -a /var/log/user-data.log) 2>&1
+           echo "Running as user: $(whoami)"
+           echo "Current working directory: $(pwd)"
+           
+           echo "=== UPDATING SYSTEM PACKAGES: $(date) ==="
+           yum update -y
+           echo "System update completed with status: $?"
 
-          # Install Docker
-          yum install -y docker git
-          systemctl start docker
-          systemctl enable docker
-          usermod -a -G docker ec2-user
+           echo "=== INSTALLING DOCKER AND GIT: $(date) ==="
+           yum install -y docker git
+           echo "Docker and Git installation completed with status: $?"
+           
+           echo "=== STARTING DOCKER SERVICE: $(date) ==="
+           systemctl start docker
+           systemctl enable docker
+           echo "Docker service status: $(systemctl is-active docker)"
+           usermod -a -G docker ec2-user
+           echo "Added ec2-user to docker group"
 
-          # Install Docker Compose
-          curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          chmod +x /usr/local/bin/docker-compose
-          ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+           echo "=== INSTALLING DOCKER COMPOSE: $(date) ==="
+           curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+           chmod +x /usr/local/bin/docker-compose
+           ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+           echo "Docker Compose version: $(docker-compose --version || echo 'NOT INSTALLED')"
 
-          # Install AWS CLI v2
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          ./aws/install
+           echo "=== INSTALLING AWS CLI V2: $(date) ==="
+           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+           unzip awscliv2.zip
+           ./aws/install
+           echo "AWS CLI version: $(aws --version || echo 'NOT INSTALLED')"
 
-          # Create application directory
-          mkdir -p /opt/secrets-service
-          cd /opt/secrets-service
+           echo "=== CREATING APPLICATION DIRECTORY: $(date) ==="
+           mkdir -p /opt/secrets-service
+           cd /opt/secrets-service
+           echo "Current directory: $(pwd)"
 
-          # Clone repository
-          git clone ${GitHubRepo} .
-          cd backend
+           echo "=== CLONING REPOSITORY: $(date) ==="
+           echo "Repository URL: ${GitHubRepo}"
+           if ! git clone ${GitHubRepo} .; then
+           echo "ERROR: Failed to clone repository"
+           exit 1
+           fi
+           echo "Repository cloned successfully"
+           echo "Repository contents:"
+           ls -la
 
-          # Create environment file
-          cat > .env << EOF
-          VAULT_ADDR=http://localhost:8200
-          VAULT_TOKEN=dev-token
-          JWT_SECRET=${JWTSecret}
-          PORT=8080
-          ALLOWED_ORIGIN=${AllowedOrigins}
-          AUTH_USERNAME=${AuthUsername}
-          AUTH_PASSWORD=${AuthPassword}
-          OPENAI_API_KEY=${OpenAIAPIKey}
-          FIREBASE_API_KEY=${FirebaseAPIKey}
-          EOF
+           echo "=== VERIFYING DIRECTORY STRUCTURE: $(date) ==="
+           if [ ! -d "backend" ]; then
+           echo "ERROR: Backend directory not found in repository"
+           ls -la
+           exit 1
+           fi
+           echo "Backend directory found"
 
-          # Create management scripts
-          cat > /opt/secrets-service/start.sh << 'EOF'
-          #!/bin/bash
-          cd /opt/secrets-service/backend
-          docker-compose up -d
-          EOF
+           cd backend
+           echo "Current directory: $(pwd)"
 
-          cat > /opt/secrets-service/stop.sh << 'EOF'
-          #!/bin/bash
-          cd /opt/secrets-service/backend
-          docker-compose down
-          EOF
+           echo "=== CHECKING FOR REQUIRED SCRIPTS: $(date) ==="
+           if [ ! -f "deploy-nginx.sh" ]; then
+           echo "ERROR: deploy-nginx.sh not found in backend directory"
+           ls -la
+           exit 1
+           fi
+           echo "deploy-nginx.sh found"
 
-          cat > /opt/secrets-service/restart.sh << 'EOF'
-          #!/bin/bash
-          cd /opt/secrets-service/backend
-          docker-compose down
-          git pull origin main
-          docker-compose up -d --build
-          EOF
+           if [ ! -f "ssl-setup.sh" ]; then
+           echo "ERROR: ssl-setup.sh not found in backend directory"
+           ls -la
+           exit 1
+           fi
+           echo "ssl-setup.sh found"
 
-          cat > /opt/secrets-service/status.sh << 'EOF'
-          #!/bin/bash
-          cd /opt/secrets-service/backend
-          docker-compose ps
-          EOF
+           echo "=== CREATING SSL AND LOGS DIRECTORIES: $(date) ==="
+           mkdir -p ssl logs/nginx
+           echo "Directories created"
 
-          cat > /opt/secrets-service/logs.sh << 'EOF'
-          #!/bin/bash
-          cd /opt/secrets-service/backend
-          docker-compose logs -f
-          EOF
+           echo "=== CREATING ENVIRONMENT FILE: $(date) ==="
+           cat > .env << EOF
+           VAULT_ADDR=http://localhost:8200
+           VAULT_TOKEN=dev-token
+           JWT_SECRET=${JWTSecret}
+           PORT=8080
+           ALLOWED_ORIGIN=${AllowedOrigins}
+           AUTH_USERNAME=${AuthUsername}
+           AUTH_PASSWORD=${AuthPassword}
+           OPENAI_API_KEY=${OpenAIAPIKey}
+           FIREBASE_API_KEY=${FirebaseAPIKey}
+           DOMAIN=${Domain}
+           CLOUDFLARE_API_TOKEN=${CloudflareAPIToken}
+           EOF
+           echo "Environment file created with the following variables (values redacted):"
+           grep -v "SECRET\|TOKEN\|PASSWORD\|KEY" .env || echo "Could not display env vars"
 
-          # Make scripts executable
-          chmod +x /opt/secrets-service/*.sh
+           echo "=== MAKING DEPLOYMENT SCRIPTS EXECUTABLE: $(date) ==="
+           chmod +x deploy-nginx.sh
+           chmod +x ssl-setup.sh
+           echo "Script permissions: $(ls -la deploy-nginx.sh ssl-setup.sh)"
 
-          # Start the application
-          /opt/secrets-service/start.sh
+           echo "=== CREATING MANAGEMENT SCRIPTS: $(date) ==="
+           cat > /opt/secrets-service/start.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh start
+           EOF
 
-          # Create systemd service for auto-restart
-          cat > /etc/systemd/system/secrets-service.service << 'EOF'
-          [Unit]
-          Description=Secrets Service
-          Requires=docker.service
-          After=docker.service
+           cat > /opt/secrets-service/stop.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh stop
+           EOF
 
-          [Service]
-          Type=oneshot
-          RemainAfterExit=yes
-          ExecStart=/opt/secrets-service/start.sh
-          ExecStop=/opt/secrets-service/stop.sh
+           cat > /opt/secrets-service/restart.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh restart
+           EOF
 
-          [Install]
-          WantedBy=multi-user.target
-          EOF
+           cat > /opt/secrets-service/status.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh status
+           EOF
 
-          systemctl enable secrets-service
-          systemctl start secrets-service
+           cat > /opt/secrets-service/logs.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh logs
+           EOF
 
+           cat > /opt/secrets-service/update.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh update
+           EOF
+
+           cat > /opt/secrets-service/health.sh << 'EOF'
+           #!/bin/bash
+           cd /opt/secrets-service/backend
+           ./deploy-nginx.sh health
+           EOF
+
+           echo "=== MAKING SCRIPTS EXECUTABLE: $(date) ==="
+           chmod +x /opt/secrets-service/*.sh
+           echo "Management scripts created and made executable"
+           ls -la /opt/secrets-service/*.sh
+
+           echo "=== DEPLOYING APPLICATION: $(date) ==="
+           cd /opt/secrets-service/backend
+           echo "Current directory: $(pwd)"
+           echo "Files in current directory:"
+           ls -la
+           echo "Checking if deploy-nginx.sh is executable:"
+           ls -la deploy-nginx.sh
+
+           echo "=== RUNNING DEPLOYMENT SCRIPT: $(date) ==="
+           if [ -x "deploy-nginx.sh" ]; then
+           echo "deploy-nginx.sh is executable, running deployment..."
+           ./deploy-nginx.sh deploy
+           echo "Deployment script completed with status: $?"
+           else
+           echo "WARNING: deploy-nginx.sh is not executable, making it executable and trying again..."
+           chmod +x deploy-nginx.sh
+           ./deploy-nginx.sh deploy
+           echo "Deployment script completed with status: $?"
+           fi
+
+           echo "=== WAITING FOR SERVICES TO START: $(date) ==="
+           echo "Sleeping for 30 seconds to allow services to initialize..."
+           sleep 30
+
+           echo "=== CHECKING DEPLOYMENT STATUS: $(date) ==="
+           if [ -x "./deploy-nginx.sh" ]; then
+           ./deploy-nginx.sh status
+           echo "Docker container status:"
+           docker ps -a
+           echo "Docker container logs (last 10 lines):"
+           docker-compose logs --tail=10
+           else
+           echo "ERROR: deploy-nginx.sh script not found or not executable"
+           ls -la deploy-nginx.sh
+           fi
+
+           echo "=== CREATING SYSTEMD SERVICE: $(date) ==="
+           cat > /etc/systemd/system/secrets-service.service << 'EOF'
+           [Unit]
+           Description=Secrets Service with Nginx Reverse Proxy
+           Requires=docker.service
+           After=docker.service network.target
+
+           [Service]
+           Type=oneshot
+           RemainAfterExit=yes
+           ExecStart=/opt/secrets-service/backend/deploy-nginx.sh start
+           ExecStop=/opt/secrets-service/backend/deploy-nginx.sh stop
+           ExecReload=/opt/secrets-service/backend/deploy-nginx.sh restart
+           WorkingDirectory=/opt/secrets-service/backend
+           User=root
+           Group=root
+
+           [Install]
+           WantedBy=multi-user.target
+           EOF
+
+           echo "=== ENABLING SYSTEMD SERVICE: $(date) ==="
+           systemctl daemon-reload
+           systemctl enable secrets-service
+           echo "Systemd service enabled"
+
+           echo "=== STARTING SYSTEMD SERVICE: $(date) ==="
+           if systemctl start secrets-service; then
+           echo "Systemd service started successfully"
+           systemctl status secrets-service
+           else
+           echo "ERROR: Failed to start systemd service"
+           systemctl status secrets-service
+           echo "Journalctl logs for the service:"
+           journalctl -u secrets-service -n 50
+           exit 1
+           fi
+
+           echo "=== DEPLOYMENT COMPLETED: $(date) ==="
+           PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+           echo "Application should be available at:"
+           echo "- HTTP: http://$PUBLIC_IP:80"
+           [ -n "${Domain}" ] && echo "- Domain: https://${Domain}"
+           echo "=== SYSTEM INFORMATION: $(date) ==="
+           echo "Disk space:"
+           df -h
+           echo "Memory usage:"
+           free -m
+           echo "Network status:"
+           netstat -tulpn | grep -E ':(80|443|8080|8200)'
       Tags:
         - Key: Name
           Value: secrets-service-instance
@@ -227,13 +378,29 @@ Outputs:
       Name: !Sub "${AWS::StackName}-PublicIP"
 
   ApplicationURL:
-    Description: URL of the application
-    Value: !Sub "http://${SecretsServiceInstance.PublicIp}:8080"
+    Description: URL of the application (HTTP)
+    Value: !Sub "http://${SecretsServiceInstance.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}-ApplicationURL"
+
+  ApplicationHTTPSURL:
+    Description: URL of the application (HTTPS)
+    Value: !Sub "https://${SecretsServiceInstance.PublicIp}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationHTTPSURL"
+
+  DomainURL:
+    Description: Domain URL (if domain is configured)
+    Value: !Sub "https://${Domain}"
+    Export:
+      Name: !Sub "${AWS::StackName}-DomainURL"
+    Condition: DomainProvided
 
   SSHCommand:
     Description: SSH command to connect to the instance
     Value: !Sub "ssh -i ${KeyPairName}.pem ec2-user@${SecretsServiceInstance.PublicIp}"
     Export:
       Name: !Sub "${AWS::StackName}-SSHCommand"
+
+Conditions:
+  DomainProvided: !Not [!Equals [!Ref Domain, ""]]
