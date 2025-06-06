@@ -129,8 +129,8 @@ Resources:
       KeyName: !Ref KeyPairName
       SecurityGroupIds:
         - !Ref SecretsServiceSecurityGroup
-            IamInstanceProfile: !Ref EC2InstanceProfile
-            UserData:
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      UserData:
         Fn::Base64: !Sub |
            #!/bin/bash
             echo "=== STARTING DEPLOYMENT SCRIPT: $(date) ===" > /var/log/user-data.log 2>&1
