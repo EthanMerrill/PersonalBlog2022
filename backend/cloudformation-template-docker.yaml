@@ -366,7 +366,7 @@ Resources:
             free -m
             echo "Network status:"
             netstat -tulpn | grep -E ':(80|443|8080|8200)'
-            Tags:
+      Tags:
         - Key: Name
           Value: secrets-service-instance
 
