@@ -259,7 +259,7 @@ Resources:
           ls -la
           echo "Checking if deploy-nginx.sh is executable:"
           ls -la deploy-nginx.sh
-          
+
           # Test if script can be executed
           if [ -x "deploy-nginx.sh" ]; then
             echo "deploy-nginx.sh is executable, running deployment..."
@@ -306,7 +306,7 @@ Resources:
 
           systemctl daemon-reload
           systemctl enable secrets-service
-          
+
           echo "Starting secrets-service systemd service..."
           if systemctl start secrets-service; then
             echo "Systemd service started successfully"
