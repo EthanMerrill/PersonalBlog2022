@@ -1,11 +1,9 @@
 #!/bin/bash
 
-set -e
+# Backward compatibility wrapper for the new Lightsail deployment
+# This script maintains the same interface but uses Lightsail instead of CloudFormation
 
-# Configuration
-STACK_NAME="secrets-service-stack"
-AWS_REGION="${AWS_REGION:-us-east-1}"
-TEMPLATE_FILE="cloudformation-template-docker.yaml"
+set -e
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,7 +11,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -26,30 +23,25 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to check if stack exists
-check_stack_exists() {
-    aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" > /dev/null 2>&1
-}
+print_warning "🚨 MIGRATION NOTICE 🚨"
+print_warning "This deployment has been migrated from CloudFormation to AWS Lightsail"
+print_warning "Please see LIGHTSAIL_MIGRATION.md for details"
+print_warning ""
+print_status "Redirecting to new Lightsail deployment script..."
+print_status ""
 
-# Function to get stack status
-get_stack_status() {
-    aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "NOT_EXISTS"
-}
+# Check if the new script exists
+if [ ! -f "deploy-lightsail.sh" ]; then
+    print_error "New Lightsail deployment script not found!"
+    print_error "Please ensure deploy-lightsail.sh exists in the current directory"
+    exit 1
+fi
 
-# Function to get EC2 instance ID from stack
-get_instance_id() {
-    aws cloudformation describe-stack-resources --stack-name "$STACK_NAME" --region "$AWS_REGION" --logical-resource-id "EC2Instance" --query 'StackResources[0].PhysicalResourceId' --output text 2>/dev/null
-}
+# Make sure it's executable
+chmod +x deploy-lightsail.sh
 
-# Function to get EC2 instance state
-get_instance_state() {
-    local instance_id="$1"
-    if [ -n "$instance_id" ] && [ "$instance_id" != "None" ]; then
-        aws ec2 describe-instances --instance-ids "$instance_id" --region "$AWS_REGION" --query 'Reservations[0].Instances[0].State.Name' --output text 2>/dev/null || echo "not-found"
-    else
-        echo "not-found"
-    fi
-}
+# Forward all arguments to the new script
+exec ./deploy-lightsail.sh "$@"
 
 # Function to delete stack
 delete_stack() {
