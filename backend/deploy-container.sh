@@ -315,26 +315,24 @@ deploy_container() {
 wait_for_application() {
     local service_url="$1"
     local health_url="$service_url/health"
-    
+
     print_status "Waiting for application to be ready at $health_url"
     local max_attempts=30
     local attempt=0
-    
+
     while [ $attempt -lt $max_attempts ]; do
-        if curl -f -s "$health_url" >/dev/null 2>&1; then
+        if curl -f "$health_url"; then
             print_status "✅ Application is ready!"
             return 0
         fi
-        
-        if [ $attempt -eq $((max_attempts - 1)) ]; then
-            print_error "❌ Application failed to respond after $((max_attempts * 10)) seconds"
-            return 1
-        fi
-        
+
         print_info "⏳ Attempt $((attempt + 1))/$max_attempts - waiting 10 seconds..."
         sleep 10
         attempt=$((attempt + 1))
     done
+
+    print_error "❌ Application failed to respond after $((max_attempts * 10)) seconds"
+    return 1
 }
 
 # Function to run health check

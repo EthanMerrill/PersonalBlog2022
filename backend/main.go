@@ -79,7 +79,7 @@ func main() {
 	// Log configuration (without sensitive data)
 	log.Printf("Configuration loaded:")
 	log.Printf("  Port: %s", config.Port)
-	log.Printf("  Allowed Origins: %s", config.AllowedOrigins)
+
 	log.Printf("  Auth Username: %s", config.AuthUsername)
 	log.Printf("  JWT Secret configured: %t", config.JWTSecret != "")
 	log.Printf("  OpenAI Key configured: %t", config.OpenAIKey != "")

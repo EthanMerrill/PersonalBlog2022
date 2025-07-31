@@ -19,6 +19,7 @@ This is a portfolio project undertaken to showcase my work and web development e
 
 ### High priority
 
+- [ ] fix textbox for mobile (min size the boxes, make the you/time text the same as the bot's timestamp text)
 - [ ] re-write intro blurb and re-style that section
 - [ ] brighten the aurora
 - [ ] add place, date info on hover of items
