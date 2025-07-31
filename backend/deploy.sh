@@ -28,13 +28,6 @@ print_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-print_warning "🚨 DEPLOYMENT UPDATE 🚨"
-print_warning "This deployment has been upgraded to use AWS Lightsail Container Service"
-print_info "✅ Benefits:"
-print_info "  - No SSH key pairs required"
-print_info "  - Fully managed containers"
-print_info "  - Built-in load balancing and HTTPS"
-print_info "  - Easier scaling and management"
 print_warning ""
 print_status "Redirecting to new container deployment script..."
 print_status ""
