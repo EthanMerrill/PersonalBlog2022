@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# GitHub Secrets Setup Script for Lightsail Deployment
-# This script helps you set up the required GitHub secrets for the new Lightsail deployment
+# GitHub Secrets Setup Script for Lightsail Container Service
+# This script helps you set up the required GitHub secrets for Lightsail Container Service deployment
 
 set -e
 
@@ -91,9 +91,9 @@ show_secrets() {
 
 # Main setup function
 main() {
-    echo -e "${BLUE}======================================${NC}"
-    echo -e "${BLUE}  GitHub Secrets Setup for Lightsail${NC}"
-    echo -e "${BLUE}======================================${NC}"
+    echo -e "${BLUE}===============================================${NC}"
+    echo -e "${BLUE}  GitHub Secrets Setup for Lightsail Containers${NC}"
+    echo -e "${BLUE}===============================================${NC}"
     echo
     
     check_gh_cli
@@ -101,7 +101,8 @@ main() {
     print_status "Repository: $(gh repo view --json nameWithOwner -q .nameWithOwner)"
     echo
     
-    print_info "This script will help you set up the required GitHub secrets for Lightsail deployment"
+    print_info "This script will help you set up the required GitHub secrets for Lightsail Container Service"
+    print_info "No SSH key pairs needed - containers are managed entirely through AWS APIs!"
     print_info "You can skip optional secrets by entering an empty value"
     echo
     
@@ -110,8 +111,6 @@ main() {
     
     set_secret "AWS_ACCESS_KEY_ID" "Your AWS Access Key ID" false
     set_secret "AWS_SECRET_ACCESS_KEY" "Your AWS Secret Access Key" false
-    set_secret "AWS_KEY_PAIR_NAME" "Name of your AWS Key Pair (without .pem extension)" false
-    set_secret "AWS_PRIVATE_KEY" "Content of your .pem private key file" true
     set_secret "JWT_SECRET" "JWT secret for authentication" false
     set_secret "AUTH_USERNAME" "Basic authentication username" false
     set_secret "AUTH_PASSWORD" "Basic authentication password" false
@@ -140,7 +139,8 @@ main() {
 show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo
-    echo "Set up GitHub secrets for Lightsail deployment"
+    echo "Set up GitHub secrets for Lightsail Container Service deployment"
+    echo "No SSH key pairs required - fully managed container service!"
     echo
     echo "Options:"
     echo "  -h, --help        Show this help message"

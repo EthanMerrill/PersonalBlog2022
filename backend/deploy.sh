@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Backward compatibility wrapper for the new Lightsail deployment
-# This script maintains the same interface but uses Lightsail instead of CloudFormation
+# Backward compatibility wrapper for the new Lightsail Container Service deployment
+# This script maintains the same interface but uses container service instead of instances
 
 set -e
 
@@ -9,6 +9,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 print_status() {
@@ -23,25 +24,33 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-print_warning "🚨 MIGRATION NOTICE 🚨"
-print_warning "This deployment has been migrated from CloudFormation to AWS Lightsail"
-print_warning "Please see LIGHTSAIL_MIGRATION.md for details"
+print_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_warning "🚨 DEPLOYMENT UPDATE 🚨"
+print_warning "This deployment has been upgraded to use AWS Lightsail Container Service"
+print_info "✅ Benefits:"
+print_info "  - No SSH key pairs required"
+print_info "  - Fully managed containers"
+print_info "  - Built-in load balancing and HTTPS"
+print_info "  - Easier scaling and management"
 print_warning ""
-print_status "Redirecting to new Lightsail deployment script..."
+print_status "Redirecting to new container deployment script..."
 print_status ""
 
 # Check if the new script exists
-if [ ! -f "deploy-lightsail.sh" ]; then
-    print_error "New Lightsail deployment script not found!"
-    print_error "Please ensure deploy-lightsail.sh exists in the current directory"
+if [ ! -f "deploy-container.sh" ]; then
+    print_error "New container deployment script not found!"
+    print_error "Please ensure deploy-container.sh exists in the current directory"
     exit 1
 fi
 
 # Make sure it's executable
-chmod +x deploy-lightsail.sh
+chmod +x deploy-container.sh
 
 # Forward all arguments to the new script
-exec ./deploy-lightsail.sh "$@"
+exec ./deploy-container.sh "$@"
 
 # Function to delete stack
 delete_stack() {
