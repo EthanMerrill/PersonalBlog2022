@@ -165,7 +165,7 @@ create_container_config() {
     cat > /tmp/containers.json << EOF
 {
   "secrets-service": {
-    "image": ":secrets-service.latest",
+    "image": ":$SERVICE_NAME.secrets-service.latest",
     "environment": {
       "JWT_SECRET": "$JWT_SECRET",
       "PORT": "8080",
