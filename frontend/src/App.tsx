@@ -21,7 +21,6 @@ export default function App(): React.ReactElement {
         };
     }, []);
 
-
     return (
         <div className='main-body'>
             <div className='easter-egg absolute top-[-10px]'><p className=' z-10 relative text-white'>Hello again!</p></div>
