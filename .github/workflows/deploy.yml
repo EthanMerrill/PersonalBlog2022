@@ -1,4 +1,4 @@
-name: Deploy Secrets Service to AWS
+name: Deploy Secrets Service to AWS Lightsail Containers
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  STACK_NAME: secrets-service-production
+  SERVICE_NAME: secrets-service
 
 jobs:
   test:
@@ -43,10 +43,9 @@ jobs:
         run: go build -o bin/secrets-service .
 
   deploy:
-    name: Deploy to AWS
+    name: Deploy to AWS Lightsail Containers
     runs-on: ubuntu-latest
     needs: test
-    # if: github.ref == 'refs/heads/main'
     defaults:
       run:
         working-directory: ./backend
@@ -55,6 +54,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -62,156 +66,122 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Check stack and instance status
-        id: check-stack
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Lightsail Control Plugin
         run: |
-          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
-            STACK_STATUS=$(aws cloudformation describe-stacks \
-              --stack-name ${{ env.STACK_NAME }} \
-              --region ${{ env.AWS_REGION }} \
-              --query 'Stacks[0].StackStatus' \
-              --output text)
-            
-            echo "stack_exists=true" >> $GITHUB_OUTPUT
-            echo "stack_status=$STACK_STATUS" >> $GITHUB_OUTPUT
-            echo "Stack ${{ env.STACK_NAME }} exists with status: $STACK_STATUS"
-            
-            # Check if stack is in a failed state that prevents updates
-            if [[ "$STACK_STATUS" == *"FAILED"* ]] || [[ "$STACK_STATUS" == *"ROLLBACK"* ]]; then
-              echo "needs_recreation=true" >> $GITHUB_OUTPUT
-              echo "Stack is in failed state and needs to be recreated"
-            elif [[ "$STACK_STATUS" == "CREATE_COMPLETE" ]] || [[ "$STACK_STATUS" == "UPDATE_COMPLETE" ]]; then
-              # Stack is healthy, now check EC2 instance state
-              echo "Checking EC2 instance state..."
-              INSTANCE_ID=$(aws cloudformation describe-stack-resources \
-                --stack-name ${{ env.STACK_NAME }} \
-                --region ${{ env.AWS_REGION }} \
-                --logical-resource-id "EC2Instance" \
-                --query 'StackResources[0].PhysicalResourceId' \
-                --output text 2>/dev/null || echo "")
-              
-              if [ -n "$INSTANCE_ID" ] && [ "$INSTANCE_ID" != "None" ]; then
-                INSTANCE_STATE=$(aws ec2 describe-instances \
-                  --instance-ids "$INSTANCE_ID" \
-                  --region ${{ env.AWS_REGION }} \
-                  --query 'Reservations[0].Instances[0].State.Name' \
-                  --output text 2>/dev/null || echo "not-found")
-                
-                echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
-                echo "instance_state=$INSTANCE_STATE" >> $GITHUB_OUTPUT
-                echo "EC2 Instance ID: $INSTANCE_ID"
-                echo "EC2 Instance State: $INSTANCE_STATE"
-                
-                # Check if instance is terminated or terminating
-                if [[ "$INSTANCE_STATE" == "terminated" ]] || [[ "$INSTANCE_STATE" == "terminating" ]] || [[ "$INSTANCE_STATE" == "not-found" ]]; then
-                  echo "needs_recreation=true" >> $GITHUB_OUTPUT
-                  echo "EC2 instance is terminated/terminating or not found - stack needs recreation"
-                else
-                  echo "needs_recreation=false" >> $GITHUB_OUTPUT
-                  echo "EC2 instance is in acceptable state: $INSTANCE_STATE"
-                fi
-              else
-                echo "needs_recreation=true" >> $GITHUB_OUTPUT
-                echo "Could not find EC2 instance in stack - stack needs recreation"
-              fi
-            else
-              echo "needs_recreation=false" >> $GITHUB_OUTPUT
-              echo "Stack is in transitional state, will attempt update"
-            fi
-          else
-            echo "stack_exists=false" >> $GITHUB_OUTPUT
-            echo "needs_recreation=false" >> $GITHUB_OUTPUT
-            echo "Stack ${{ env.STACK_NAME }} does not exist"
-          fi
+          # Install lightsailctl plugin for AWS CLI push-container-image command
+          echo "📦 Installing Lightsail Control Plugin..."
 
-      - name: Delete failed stack or recreate for terminated instance
-        if: steps.check-stack.outputs.needs_recreation == 'true'
+          # Download the plugin
+          curl -L -o lightsailctl https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl
+
+          # Make it executable and move to system path
+          chmod +x lightsailctl
+          sudo mv lightsailctl /usr/local/bin/lightsailctl
+
+          # Verify installation
+          echo "✅ lightsailctl plugin installed at $(which lightsailctl || echo 'not found in PATH')"
+
+          # The AWS CLI will automatically find and use this plugin for push-container-image commands
+
+      - name: Deploy to Lightsail Containers
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          POWER: nano
+          SCALE: 1
         run: |
-          if [[ "${{ steps.check-stack.outputs.stack_exists }}" == "true" ]]; then
-            echo "Deleting stack ${{ env.STACK_NAME }}..."
-            if [[ -n "${{ steps.check-stack.outputs.instance_state }}" ]]; then
-              echo "Reason: EC2 instance is in state '${{ steps.check-stack.outputs.instance_state }}'"
-            else
-              echo "Reason: Stack is in failed state '${{ steps.check-stack.outputs.stack_status }}'"
-            fi
-            
-            aws cloudformation delete-stack \
-              --stack-name ${{ env.STACK_NAME }} \
-              --region ${{ env.AWS_REGION }}
-
-            echo "Waiting for stack deletion to complete..."
-            aws cloudformation wait stack-delete-complete \
-              --stack-name ${{ env.STACK_NAME }} \
-              --region ${{ env.AWS_REGION }}
-
-            echo "Stack deletion completed"
-          else
-            echo "Stack does not exist, proceeding with creation"
-          fi
-
-      - name: Deploy CloudFormation stack
-        run: |
-          aws cloudformation deploy \
-            --template-file cloudformation-template-docker.yaml \
-            --stack-name ${{ env.STACK_NAME }} \
-            --parameter-overrides \
-              KeyPairName="${{ secrets.AWS_KEY_PAIR_NAME }}" \
-              JWTSecret="${{ secrets.JWT_SECRET }}" \
-              AuthUsername="${{ secrets.AUTH_USERNAME }}" \
-              AuthPassword="${{ secrets.AUTH_PASSWORD }}" \
-              AllowedOrigins="${{ secrets.ALLOWED_ORIGINS }}" \
-              OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
-              FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
-              GitHubRepo="https://github.com/${{ github.repository }}.git" \
-              InstanceType="t2.micro" \
-            --capabilities CAPABILITY_IAM \
-            --region ${{ env.AWS_REGION }} \
-            --no-fail-on-empty-changeset
+          chmod +x deploy-container.sh
+          ./deploy-container.sh
 
       - name: Get deployment outputs
         id: outputs
         run: |
-          PUBLIC_IP=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.STACK_NAME }} \
-            --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`PublicIP`].OutputValue' \
-            --output text)
+          # Wait a moment for the service to be fully ready
+          sleep 30
 
-          APPLICATION_URL=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.STACK_NAME }} \
+          SERVICE_URL=$(aws lightsail get-container-services \
+            --service-name ${{ env.SERVICE_NAME }} \
             --region ${{ env.AWS_REGION }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ApplicationURL`].OutputValue' \
-            --output text)
+            --query 'containerServices[0].url' \
+            --output text \
+            --no-cli-pager)
 
-          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-          echo "application_url=$APPLICATION_URL" >> $GITHUB_OUTPUT
+          if [ "$SERVICE_URL" = "None" ] || [ "$SERVICE_URL" = "null" ] || [ -z "$SERVICE_URL" ]; then
+            echo "❌ Failed to get service URL"
+            exit 1
+          fi
+
+          echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "🔗 Service URL: $SERVICE_URL"
 
       - name: Wait for application to be ready
         run: |
-          echo "Waiting for application to be ready at ${{ steps.outputs.outputs.application_url }}/health"
-          for i in {1..30}; do
-            if curl -f -s "${{ steps.outputs.outputs.application_url }}/health" >/dev/null 2>&1; then
+          SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
+          HEALTH_URL="$SERVICE_URL/health"
+          echo "🏥 Waiting for application to be ready at $HEALTH_URL"
+
+          for i in {1..40}; do
+            if curl -f -s "$HEALTH_URL" >/dev/null 2>&1; then
               echo "✅ Application is ready!"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Application failed to respond after 5 minutes"
+            if [ $i -eq 40 ]; then
+              echo "❌ Application failed to respond after 6+ minutes"
+              echo "🔍 Checking container logs..."
+              aws lightsail get-container-log \
+                --service-name ${{ env.SERVICE_NAME }} \
+                --container-name secrets-service \
+                --region ${{ env.AWS_REGION }} \
+                --start-time "$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+                --no-cli-pager || true
               exit 1
             fi
-            echo "⏳ Attempt $i/30 - waiting 10 seconds..."
+            echo "⏳ Attempt $i/40 - waiting 10 seconds..."
             sleep 10
           done
 
       - name: Run health check
         run: |
-          HEALTH_RESPONSE=$(curl -s "${{ steps.outputs.outputs.application_url }}/health")
+          SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
+          HEALTH_URL="$SERVICE_URL/health"
+
+          echo "🔍 Running comprehensive health check..."
+          HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" 2>/dev/null || echo "")
           echo "Health check response: $HEALTH_RESPONSE"
 
           # Verify the response contains expected health check data
           if echo "$HEALTH_RESPONSE" | grep -q "status"; then
             echo "✅ Health check passed!"
+            
+            # Test auth endpoint as well
+            echo "🔐 Testing auth endpoint..."
+            AUTH_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              -d '{"username":"invalid","password":"invalid"}' \
+              "$SERVICE_URL/auth" 2>/dev/null || echo "000")
+            
+            HTTP_CODE="${AUTH_RESPONSE: -3}"
+            if [ "$HTTP_CODE" = "401" ]; then
+              echo "✅ Auth endpoint working correctly (rejects invalid credentials)"
+            else
+              echo "⚠️ Auth endpoint returned HTTP $HTTP_CODE (expected 401)"
+            fi
           else
             echo "❌ Health check failed - unexpected response"
+            echo "🔍 Checking recent container logs..."
+            aws lightsail get-container-log \
+              --service-name ${{ env.SERVICE_NAME }} \
+              --container-name secrets-service \
+              --region ${{ env.AWS_REGION }} \
+              --start-time "$(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+              --no-cli-pager || true
             exit 1
           fi
 
@@ -221,29 +191,29 @@ jobs:
           # 🚀 Deployment Successful!
 
           ## 📋 Deployment Details
-          - **Stack Name**: \`${{ env.STACK_NAME }}\`
+          - **Service Name**: \`${{ env.SERVICE_NAME }}\`
           - **Region**: \`${{ env.AWS_REGION }}\`
-          - **Public IP**: \`${{ steps.outputs.outputs.public_ip }}\`
+          - **Service URL**: \`${{ steps.outputs.outputs.service_url }}\`
           - **Commit**: \`${{ github.sha }}\`
           - **Branch**: \`${{ github.ref_name }}\`
 
           ## 🔗 Application URLs
-          - **Application**: [${{ steps.outputs.outputs.application_url }}](${{ steps.outputs.outputs.application_url }})
-          - **Health Check**: [${{ steps.outputs.outputs.application_url }}/health](${{ steps.outputs.outputs.application_url }}/health)
+          - **Application**: [${{ steps.outputs.outputs.service_url }}](${{ steps.outputs.outputs.service_url }})
+          - **Health Check**: [${{ steps.outputs.outputs.service_url }}/health](${{ steps.outputs.outputs.service_url }}/health)
 
           ## 🛠 Management Commands
           \`\`\`bash
-          # SSH into the instance
-          ssh -i ${{ secrets.AWS_KEY_PAIR_NAME }}.pem ec2-user@${{ steps.outputs.outputs.public_ip }}
+          # View service status
+          aws lightsail get-container-services --service-name ${{ env.SERVICE_NAME }} --region ${{ env.AWS_REGION }}
 
-          # Check application status
-          sudo /opt/secrets-service/status.sh
+          # View container logs
+          aws lightsail get-container-log --service-name ${{ env.SERVICE_NAME }} --container-name secrets-service --region ${{ env.AWS_REGION }}
 
-          # View logs
-          sudo /opt/secrets-service/logs.sh
+          # Scale service (increase replicas)
+          aws lightsail update-container-service --service-name ${{ env.SERVICE_NAME }} --scale 2 --region ${{ env.AWS_REGION }}
 
-          # Restart application
-          sudo /opt/secrets-service/restart.sh
+          # Upgrade service power
+          aws lightsail update-container-service --service-name ${{ env.SERVICE_NAME }} --power micro --region ${{ env.AWS_REGION }}
           \`\`\`
           EOF
 

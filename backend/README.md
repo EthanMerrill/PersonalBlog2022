@@ -208,7 +208,104 @@ For your portfolio application, I've implemented **JWT-based authentication** ra
 
 ## Production Deployment
 
-### Recommended Hosting Options:
+### AWS Lightsail Container Service (Recommended)
+
+This project is configured for easy deployment to AWS Lightsail Container Service, offering:
+
+- **Cost-effective**: Starting at $7/month (nano container)
+- **Fully managed**: No servers to manage, automatic scaling and load balancing
+- **No SSH required**: Deploy and manage entirely through AWS APIs
+- **Built-in HTTPS**: Automatic SSL certificates and custom domains
+- **Container-native**: Perfect for Docker-based applications
+
+#### GitHub Actions Deployment (Automated)
+
+1. **Set up GitHub Secrets** (use the helper script):
+
+   ```bash
+   ./setup-lightsail-secrets.sh
+   ```
+
+   Or manually add these secrets in your GitHub repository:
+
+   - `AWS_ACCESS_KEY_ID` - Your AWS access key
+   - `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
+   - `JWT_SECRET` - JWT secret for authentication
+   - `AUTH_USERNAME` - Basic auth username
+   - `AUTH_PASSWORD` - Basic auth password
+   - `ALLOWED_ORIGINS` (optional) - CORS allowed origins
+   - `OPENAI_API_KEY` (optional) - OpenAI API key
+   - `FIREBASE_API_KEY` (optional) - Firebase API key
+
+2. **Deploy**: Push to main branch or use workflow dispatch
+   ```bash
+   git push origin main
+   ```
+
+#### Manual Deployment
+
+**Prerequisites:**
+
+- AWS CLI installed and configured
+- Docker installed and running
+- Python 3 (for JSON processing)
+
+```bash
+# Generate a secure JWT secret
+export JWT_SECRET="$(openssl rand -base64 32)"
+export AUTH_USERNAME="admin"
+export AUTH_PASSWORD="your-strong-password"
+
+# Optional: Configure container size and scale
+export POWER="nano"    # nano, micro, small, medium, large, xlarge
+export SCALE="1"       # Number of container replicas
+
+# Optional: Add API keys
+export ALLOWED_ORIGINS="https://yourdomain.com"
+export OPENAI_API_KEY="sk-your-openai-key"
+export FIREBASE_API_KEY="your-firebase-key"
+
+# Deploy to Lightsail Container Service
+./deploy-container.sh
+```
+
+#### Container Management
+
+After deployment, manage your application:
+
+```bash
+# View service status
+aws lightsail get-container-services --service-name secrets-service --region us-east-1
+
+# View container logs
+aws lightsail get-container-log --service-name secrets-service --container-name secrets-service --region us-east-1
+
+# Scale horizontally (more replicas)
+aws lightsail update-container-service --service-name secrets-service --scale 2 --region us-east-1
+
+# Scale vertically (more power)
+aws lightsail update-container-service --service-name secrets-service --power micro --region us-east-1
+```
+
+#### Container Service Pricing
+
+| Power  | vCPU | RAM   | Price/Month |
+| ------ | ---- | ----- | ----------- |
+| nano   | 0.25 | 512MB | $7/month    |
+| micro  | 0.5  | 1GB   | $10/month   |
+| small  | 1    | 2GB   | $20/month   |
+| medium | 2    | 4GB   | $40/month   |
+
+_Pricing includes container hosting, load balancing, and data transfer_
+
+### Legacy Deployment Options
+
+For comparison, the old instance-based deployment is still available:
+
+- **Lightsail Instances**: `./deploy-lightsail.sh` (requires SSH key pairs)
+- **CloudFormation**: See `LIGHTSAIL_MIGRATION.md` for migration details
+
+### Alternative Hosting Options:
 
 1. **Railway**: Easy Go app deployment
 2. **Fly.io**: Docker-based deployment
