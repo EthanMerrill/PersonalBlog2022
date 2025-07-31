@@ -2,7 +2,7 @@ name: Deploy Secrets Service to AWS Lightsail Containers
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ["backend/**"]
   workflow_dispatch:
     inputs:
