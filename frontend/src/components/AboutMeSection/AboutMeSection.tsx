@@ -74,7 +74,7 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
     const getAIResponse = useCallback(async (message: string): Promise<string> => {
         try {
             // Call backend /api/chat endpoint instead of OpenAI directly
-            const token = secretsService.getToken ? secretsService.getToken() : null;
+            const token = secretsService.getToken();
             const response = await fetch(import.meta.env.VITE_SECRETS_SERVICE_URL + '/api/chat', {
                 method: 'POST',
                 headers: {
