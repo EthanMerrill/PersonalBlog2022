@@ -54,12 +54,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Deploy to Lightsail Containers
         env:
@@ -69,7 +77,6 @@ jobs:
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          GITHUB_REPO: https://github.com/${{ github.repository }}.git
           POWER: nano
           SCALE: 1
         run: |
@@ -79,40 +86,85 @@ jobs:
       - name: Get deployment outputs
         id: outputs
         run: |
+          # Wait a moment for the service to be fully ready
+          sleep 30
+
           SERVICE_URL=$(aws lightsail get-container-services \
             --service-name ${{ env.SERVICE_NAME }} \
             --region ${{ env.AWS_REGION }} \
             --query 'containerServices[0].url' \
-            --output text)
+            --output text \
+            --no-cli-pager)
+
+          if [ "$SERVICE_URL" = "None" ] || [ "$SERVICE_URL" = "null" ] || [ -z "$SERVICE_URL" ]; then
+            echo "❌ Failed to get service URL"
+            exit 1
+          fi
 
           echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "🔗 Service URL: $SERVICE_URL"
 
       - name: Wait for application to be ready
         run: |
-          echo "Waiting for application to be ready at ${{ steps.outputs.outputs.service_url }}/health"
-          for i in {1..30}; do
-            if curl -f -s "${{ steps.outputs.outputs.service_url }}/health" >/dev/null 2>&1; then
+          SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
+          HEALTH_URL="$SERVICE_URL/health"
+          echo "🏥 Waiting for application to be ready at $HEALTH_URL"
+
+          for i in {1..40}; do
+            if curl -f -s "$HEALTH_URL" >/dev/null 2>&1; then
               echo "✅ Application is ready!"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Application failed to respond after 5 minutes"
+            if [ $i -eq 40 ]; then
+              echo "❌ Application failed to respond after 6+ minutes"
+              echo "🔍 Checking container logs..."
+              aws lightsail get-container-log \
+                --service-name ${{ env.SERVICE_NAME }} \
+                --container-name secrets-service \
+                --region ${{ env.AWS_REGION }} \
+                --start-time "$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+                --no-cli-pager || true
               exit 1
             fi
-            echo "⏳ Attempt $i/30 - waiting 10 seconds..."
+            echo "⏳ Attempt $i/40 - waiting 10 seconds..."
             sleep 10
           done
 
       - name: Run health check
         run: |
-          HEALTH_RESPONSE=$(curl -s "${{ steps.outputs.outputs.service_url }}/health")
+          SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
+          HEALTH_URL="$SERVICE_URL/health"
+
+          echo "🔍 Running comprehensive health check..."
+          HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" 2>/dev/null || echo "")
           echo "Health check response: $HEALTH_RESPONSE"
 
           # Verify the response contains expected health check data
           if echo "$HEALTH_RESPONSE" | grep -q "status"; then
             echo "✅ Health check passed!"
+            
+            # Test auth endpoint as well
+            echo "🔐 Testing auth endpoint..."
+            AUTH_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              -d '{"username":"invalid","password":"invalid"}' \
+              "$SERVICE_URL/auth" 2>/dev/null || echo "000")
+            
+            HTTP_CODE="${AUTH_RESPONSE: -3}"
+            if [ "$HTTP_CODE" = "401" ]; then
+              echo "✅ Auth endpoint working correctly (rejects invalid credentials)"
+            else
+              echo "⚠️ Auth endpoint returned HTTP $HTTP_CODE (expected 401)"
+            fi
           else
             echo "❌ Health check failed - unexpected response"
+            echo "🔍 Checking recent container logs..."
+            aws lightsail get-container-log \
+              --service-name ${{ env.SERVICE_NAME }} \
+              --container-name secrets-service \
+              --region ${{ env.AWS_REGION }} \
+              --start-time "$(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+              --no-cli-pager || true
             exit 1
           fi
 

@@ -211,6 +211,7 @@ For your portfolio application, I've implemented **JWT-based authentication** ra
 ### AWS Lightsail Container Service (Recommended)
 
 This project is configured for easy deployment to AWS Lightsail Container Service, offering:
+
 - **Cost-effective**: Starting at $7/month (nano container)
 - **Fully managed**: No servers to manage, automatic scaling and load balancing
 - **No SSH required**: Deploy and manage entirely through AWS APIs
@@ -220,13 +221,15 @@ This project is configured for easy deployment to AWS Lightsail Container Servic
 #### GitHub Actions Deployment (Automated)
 
 1. **Set up GitHub Secrets** (use the helper script):
+
    ```bash
    ./setup-lightsail-secrets.sh
    ```
 
    Or manually add these secrets in your GitHub repository:
+
    - `AWS_ACCESS_KEY_ID` - Your AWS access key
-   - `AWS_SECRET_ACCESS_KEY` - Your AWS secret key  
+   - `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
    - `JWT_SECRET` - JWT secret for authentication
    - `AUTH_USERNAME` - Basic auth username
    - `AUTH_PASSWORD` - Basic auth password
@@ -241,15 +244,26 @@ This project is configured for easy deployment to AWS Lightsail Container Servic
 
 #### Manual Deployment
 
+**Prerequisites:**
+
+- AWS CLI installed and configured
+- Docker installed and running
+- Python 3 (for JSON processing)
+
 ```bash
-# Set required environment variables
-export JWT_SECRET="your-jwt-secret"
-export AUTH_USERNAME="your-username"
-export AUTH_PASSWORD="your-password"
+# Generate a secure JWT secret
+export JWT_SECRET="$(openssl rand -base64 32)"
+export AUTH_USERNAME="admin"
+export AUTH_PASSWORD="your-strong-password"
 
 # Optional: Configure container size and scale
 export POWER="nano"    # nano, micro, small, medium, large, xlarge
 export SCALE="1"       # Number of container replicas
+
+# Optional: Add API keys
+export ALLOWED_ORIGINS="https://yourdomain.com"
+export OPENAI_API_KEY="sk-your-openai-key"
+export FIREBASE_API_KEY="your-firebase-key"
 
 # Deploy to Lightsail Container Service
 ./deploy-container.sh
@@ -276,13 +290,13 @@ aws lightsail update-container-service --service-name secrets-service --power mi
 #### Container Service Pricing
 
 | Power  | vCPU | RAM   | Price/Month |
-|--------|------|-------|-------------|
+| ------ | ---- | ----- | ----------- |
 | nano   | 0.25 | 512MB | $7/month    |
 | micro  | 0.5  | 1GB   | $10/month   |
 | small  | 1    | 2GB   | $20/month   |
 | medium | 2    | 4GB   | $40/month   |
 
-*Pricing includes container hosting, load balancing, and data transfer*
+_Pricing includes container hosting, load balancing, and data transfer_
 
 ### Legacy Deployment Options
 
