@@ -58,6 +58,15 @@ validate_requirements() {
         exit 1
     fi
     
+    # Check if lightsailctl plugin is available
+    if ! command -v lightsailctl &> /dev/null; then
+        print_warning "lightsailctl plugin not found in PATH."
+        print_info "AWS CLI will attempt to use it automatically for push-container-image commands."
+        print_info "If deployment fails, see: https://lightsail.aws.amazon.com/ls/docs/en_us/articles/amazon-lightsail-install-software"
+    else
+        print_status "lightsailctl plugin found at $(which lightsailctl)"
+    fi
+    
     print_status "Requirements validation passed"
 }
 
@@ -129,6 +138,15 @@ build_and_push_image() {
     docker build -t secrets-service:latest .
     
     print_status "Pushing image to Lightsail container registry..."
+    print_info "Using service: $SERVICE_NAME in region: $AWS_REGION"
+    
+    # Ensure lightsailctl is available for AWS CLI
+    if command -v lightsailctl &> /dev/null; then
+        print_info "✅ lightsailctl plugin found at $(which lightsailctl)"
+    else
+        print_warning "⚠️ lightsailctl not found in PATH, AWS CLI will try to locate it automatically"
+    fi
+    
     aws lightsail push-container-image \
         --service-name "$SERVICE_NAME" \
         --label "secrets-service" \

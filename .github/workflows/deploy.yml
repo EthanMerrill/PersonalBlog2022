@@ -69,6 +69,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Install Lightsail Control Plugin
+        run: |
+          # Install lightsailctl plugin for AWS CLI push-container-image command
+          echo "📦 Installing Lightsail Control Plugin..."
+          
+          # Download the plugin
+          curl -L -o lightsailctl https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl
+          
+          # Make it executable and move to system path
+          chmod +x lightsailctl
+          sudo mv lightsailctl /usr/local/bin/lightsailctl
+          
+          # Verify installation
+          echo "✅ lightsailctl plugin installed at $(which lightsailctl || echo 'not found in PATH')"
+          
+          # The AWS CLI will automatically find and use this plugin for push-container-image commands
+
       - name: Deploy to Lightsail Containers
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
