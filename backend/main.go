@@ -69,10 +69,10 @@ func main() {
 	config := &Config{
 		JWTSecret:      getEnv("JWT_SECRET", "your-jwt-secret-change-this"),
 		Port:           getEnv("PORT", "8080"),
-		AllowedOrigins: getEnv("ALLOWED_ORIGIN", "https://ethanmerrill.com"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "https://ethanmerrill.com"),
 		AuthUsername:   getEnv("AUTH_USERNAME", "admin"),
 		AuthPassword:   getEnv("AUTH_PASSWORD", "changeme"),
-		OpenAIKey:      getEnv("OPENAI_K", ""),
+		OpenAIKey:      getEnv("OPENAI_API_KEY", ""),
 		FirebaseKey:    getEnv("FIREBASE_API_KEY", ""),
 	}
 
@@ -86,9 +86,15 @@ func main() {
 	log.Printf("  Firebase Key configured: %t", config.FirebaseKey != "")
 
 	// Validate required environment variables
-	if config.OpenAIKey == "" {
-		log.Println("WARNING: OPENAI_K environment variable is not set. OpenAI functionality will be disabled.")
+	if config.JWTSecret == "your-jwt-secret-change-this" {
+		log.Println("WARNING: Using default JWT secret. This is insecure for production!")
 	}
+
+	if config.OpenAIKey == "" {
+		log.Println("WARNING: OPENAI_API_KEY environment variable is not set. OpenAI functionality will be disabled.")
+	}
+
+	log.Println("Environment validation complete, starting service...")
 
 	service := &SecretService{
 		config: config,
