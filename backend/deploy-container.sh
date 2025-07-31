@@ -97,95 +97,31 @@ create_service() {
 
 # Function to wait for service to be ready
 wait_for_service() {
-    print_status "Waiting for container service to be ready..."
+    print_status "Waiting for container service health check to respond..."
+    local service_url
+    service_url=$(aws lightsail get-container-services --service-name "$SERVICE_NAME" --region "$AWS_REGION" --query 'containerServices[0].url' --output text 2>/dev/null || echo "")
+
+    if [ -z "$service_url" ] || [ "$service_url" = "None" ] || [ "$service_url" = "null" ]; then
+        print_error "Failed to get service URL"
+        return 1
+    fi
+
+    local health_url="$service_url/health"
     local max_attempts=30
     local attempt=0
-    
+
     while [ $attempt -lt $max_attempts ]; do
-        local state=$(get_service_state)
-        case "$state" in
-            "READY")
-                print_status "Container service is ready!"
-                return 0
-                ;;
-            "PENDING"|"RUNNING")
-                print_info "Service state: $state (attempt $((attempt + 1))/$max_attempts)"
-                
-                # If we've been running for a while, check logs for debugging
-                if [ "$state" = "RUNNING" ] && [ $attempt -gt 10 ]; then
-                    print_warning "Service has been RUNNING for $((attempt * 10)) seconds but not READY"
-                    print_info "Checking container logs for issues..."
-                    
-                    # Get recent container logs to help debug
-                    local logs=$(aws lightsail get-container-log \
-                        --service-name "$SERVICE_NAME" \
-                        --container-name secrets-service \
-                        --region "$AWS_REGION" \
-                        --start-time "$(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
-                        --query 'logEvents[].message' \
-                        --output text \
-                        --no-cli-pager 2>/dev/null || echo "No logs available")
-                    
-                    if [ "$logs" != "No logs available" ] && [ -n "$logs" ]; then
-                        print_info "Recent container logs:"
-                        echo "$logs" | tail -10
-                    else
-                        print_warning "No container logs available yet"
-                    fi
-                    
-                    # Check deployment status for more details
-                    local deployment_state=$(aws lightsail get-container-services \
-                        --service-name "$SERVICE_NAME" \
-                        --region "$AWS_REGION" \
-                        --query 'containerServices[0].nextDeployment.state' \
-                        --output text 2>/dev/null || echo "unknown")
-                    
-                    print_info "Deployment state: $deployment_state"
-                fi
-                
-                sleep 10
-                ;;
-            "DISABLED"|"FAILED")
-                print_error "Service is in failed state: $state"
-                
-                # Get detailed error information
-                print_info "Getting detailed service information..."
-                aws lightsail get-container-services \
-                    --service-name "$SERVICE_NAME" \
-                    --region "$AWS_REGION" \
-                    --no-cli-pager 2>/dev/null || true
-                
-                return 1
-                ;;
-            "not-found")
-                print_info "Service not found, it may still be creating..."
-                sleep 10
-                ;;
-            *)
-                print_info "Service state: $state (attempt $((attempt + 1))/$max_attempts)"
-                sleep 10
-                ;;
-        esac
+        if curl -f -s "$health_url" >/dev/null 2>&1; then
+            print_status "✅ Health check passed! Service is ready."
+            return 0
+        fi
+
+        print_info "⏳ Attempt $((attempt + 1))/$max_attempts - waiting 10 seconds..."
+        sleep 10
         attempt=$((attempt + 1))
     done
-    
-    print_error "Service failed to reach ready state after $((max_attempts * 10)) seconds"
-    
-    # Final debugging information
-    print_info "Final service status:"
-    aws lightsail get-container-services \
-        --service-name "$SERVICE_NAME" \
-        --region "$AWS_REGION" \
-        --no-cli-pager 2>/dev/null || true
-    
-    print_info "Recent container logs:"
-    aws lightsail get-container-log \
-        --service-name "$SERVICE_NAME" \
-        --container-name secrets-service \
-        --region "$AWS_REGION" \
-        --start-time "$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
-        --no-cli-pager 2>/dev/null || echo "No logs available"
-    
+
+    print_error "❌ Health check failed to respond after $((max_attempts * 10)) seconds"
     return 1
 }
 
@@ -311,36 +247,10 @@ deploy_container() {
     print_status "Container deployment initiated"
 }
 
-# Function to wait for application to be ready
-wait_for_application() {
-    local service_url="$1"
-    local health_url="$service_url/health"
-    
-    print_status "Waiting for application to be ready at $health_url"
-    local max_attempts=30
-    local attempt=0
-    
-    while [ $attempt -lt $max_attempts ]; do
-        if curl -f -s "$health_url" >/dev/null 2>&1; then
-            print_status "✅ Application is ready!"
-            return 0
-        fi
-        
-        if [ $attempt -eq $((max_attempts - 1)) ]; then
-            print_error "❌ Application failed to respond after $((max_attempts * 10)) seconds"
-            return 1
-        fi
-        
-        print_info "⏳ Attempt $((attempt + 1))/$max_attempts - waiting 10 seconds..."
-        sleep 10
-        attempt=$((attempt + 1))
-    done
-}
-
 # Function to run health check
 run_health_check() {
     local service_url="$1"
-    local health_url="$service_url/health"
+    local health_url="${SERVICE_URL}health"
     
     print_status "Running health check..."
     local response=$(curl -s "$health_url" 2>/dev/null || echo "")
