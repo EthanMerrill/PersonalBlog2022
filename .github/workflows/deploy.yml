@@ -121,37 +121,10 @@ jobs:
           echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
           echo "🔗 Service URL: $SERVICE_URL"
 
-      - name: Wait for application to be ready
-        run: |
-          SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
-          HEALTH_URL="${SERVICE_URL}health"
-
-          echo "🏥 Waiting for application to be ready at $HEALTH_URL"
-
-          for i in {1..40}; do
-            if curl -f -s "$HEALTH_URL" >/dev/null 2>&1; then
-              echo "✅ Application is ready!"
-              break
-            fi
-            if [ $i -eq 40 ]; then
-              echo "❌ Application failed to respond after 6+ minutes"
-              echo "🔍 Checking container logs..."
-              aws lightsail get-container-log \
-                --service-name ${{ env.SERVICE_NAME }} \
-                --container-name secrets-service \
-                --region ${{ env.AWS_REGION }} \
-                --start-time "$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
-                --no-cli-pager || true
-              exit 1
-            fi
-            echo "⏳ Attempt $i/40 - waiting 10 seconds..."
-            sleep 10
-          done
-
       - name: Run health check
         run: |
           SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
-          HEALTH_URL="$SERVICE_URL/health"
+          HEALTH_URL="${SERVICE_URL}health"
 
           echo "🔍 Running comprehensive health check..."
           HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" 2>/dev/null || echo "")
