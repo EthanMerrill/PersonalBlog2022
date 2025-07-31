@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
+
+	"portfolio-secrets-service/internal"
 )
 
 // Config holds all configuration
@@ -100,6 +102,9 @@ func main() {
 		config: config,
 	}
 
+	// Initialize ChatService
+	chatService := internal.NewChatService(config.OpenAIKey)
+
 	// Setup routes
 	router := mux.NewRouter()
 
@@ -119,7 +124,8 @@ func main() {
 	apiRouter.Use(service.jwtMiddleware)
 	apiRouter.HandleFunc("/secrets/openai", service.getOpenAIKeyHandler).Methods("GET")
 	apiRouter.HandleFunc("/secrets/{secretName}", service.getSecretHandler).Methods("GET")
-	log.Println("Registered protected routes: GET /api/secrets/openai, GET /api/secrets/{secretName}")
+	apiRouter.HandleFunc("/chat", chatService.ChatHandler).Methods("POST")
+	log.Println("Registered protected routes: GET /api/secrets/openai, GET /api/secrets/{secretName}, POST /api/chat")
 
 	// Setup CORS
 	// Parse comma-separated allowed origins
@@ -139,7 +145,7 @@ func main() {
 	handler := c.Handler(router)
 
 	log.Printf("Server starting on port %s, listening at http://localhost:%s", config.Port, config.Port)
-	log.Printf("Allowed origins: %s", config.AllowedOrigins)
+	log.Printf("Allowed origins: %s", originsSlice)
 	log.Fatal(http.ListenAndServe(":"+config.Port, handler))
 }
 

@@ -73,40 +73,29 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
     // 2. AI response function - memoized to prevent recreation
     const getAIResponse = useCallback(async (message: string): Promise<string> => {
         try {
-            const openaiKey = await secretsService.getOpenAIKey();
-            if (!openaiKey) {
-                throw new Error('OpenAI API key is not available');
-            }
-            console.log('Using OpenAI API key:', openaiKey); // Debugging line
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            // Call backend /api/chat endpoint instead of OpenAI directly
+            const token = secretsService.getToken();
+            const response = await fetch(import.meta.env.VITE_SECRETS_SERVICE_URL + '/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openaiKey}`
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are Ethan\'s AI assistant on his portfolio website. Be helpful, professional, and represent Ethan well. Keep responses concise and engaging.'
-                        },
-                        {
-                            role: 'user',
-                            content: message
-                        }
-                    ],
-                    max_tokens: 150,
-                    temperature: 0.7
-                })
+                body: JSON.stringify({ message })
             });
 
             if (!response.ok) {
-                throw new Error(`OpenAI API error: ${response.status}`);
+                throw new Error(`Backend chat API error: ${response.status}`);
             }
 
             const data = await response.json();
-            return data.choices[0]?.message?.content || 'Sorry, I couldn\'t process that request.';
+            if (data.response) {
+                return data.response;
+            } else if (data.error) {
+                throw new Error(data.error);
+            } else {
+                return 'Sorry, I couldn\'t process that request.';
+            }
         } catch (error) {
             console.error('AI response error:', error);
             throw error;
