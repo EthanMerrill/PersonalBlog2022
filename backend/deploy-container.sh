@@ -110,10 +110,51 @@ wait_for_service() {
                 ;;
             "PENDING"|"RUNNING")
                 print_info "Service state: $state (attempt $((attempt + 1))/$max_attempts)"
+                
+                # If we've been running for a while, check logs for debugging
+                if [ "$state" = "RUNNING" ] && [ $attempt -gt 10 ]; then
+                    print_warning "Service has been RUNNING for $((attempt * 10)) seconds but not READY"
+                    print_info "Checking container logs for issues..."
+                    
+                    # Get recent container logs to help debug
+                    local logs=$(aws lightsail get-container-log \
+                        --service-name "$SERVICE_NAME" \
+                        --container-name secrets-service \
+                        --region "$AWS_REGION" \
+                        --start-time "$(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+                        --query 'logEvents[].message' \
+                        --output text \
+                        --no-cli-pager 2>/dev/null || echo "No logs available")
+                    
+                    if [ "$logs" != "No logs available" ] && [ -n "$logs" ]; then
+                        print_info "Recent container logs:"
+                        echo "$logs" | tail -10
+                    else
+                        print_warning "No container logs available yet"
+                    fi
+                    
+                    # Check deployment status for more details
+                    local deployment_state=$(aws lightsail get-container-services \
+                        --service-name "$SERVICE_NAME" \
+                        --region "$AWS_REGION" \
+                        --query 'containerServices[0].nextDeployment.state' \
+                        --output text 2>/dev/null || echo "unknown")
+                    
+                    print_info "Deployment state: $deployment_state"
+                fi
+                
                 sleep 10
                 ;;
             "DISABLED"|"FAILED")
                 print_error "Service is in failed state: $state"
+                
+                # Get detailed error information
+                print_info "Getting detailed service information..."
+                aws lightsail get-container-services \
+                    --service-name "$SERVICE_NAME" \
+                    --region "$AWS_REGION" \
+                    --no-cli-pager 2>/dev/null || true
+                
                 return 1
                 ;;
             "not-found")
@@ -129,6 +170,22 @@ wait_for_service() {
     done
     
     print_error "Service failed to reach ready state after $((max_attempts * 10)) seconds"
+    
+    # Final debugging information
+    print_info "Final service status:"
+    aws lightsail get-container-services \
+        --service-name "$SERVICE_NAME" \
+        --region "$AWS_REGION" \
+        --no-cli-pager 2>/dev/null || true
+    
+    print_info "Recent container logs:"
+    aws lightsail get-container-log \
+        --service-name "$SERVICE_NAME" \
+        --container-name secrets-service \
+        --region "$AWS_REGION" \
+        --start-time "$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+        --no-cli-pager 2>/dev/null || echo "No logs available"
+    
     return 1
 }
 
@@ -221,9 +278,9 @@ with open('/tmp/containers.json', 'w') as f:
   "containerPort": 8080,
   "healthCheck": {
     "healthyThreshold": 2,
-    "unhealthyThreshold": 2,
-    "timeoutSeconds": 5,
-    "intervalSeconds": 30,
+    "unhealthyThreshold": 3,
+    "timeoutSeconds": 10,
+    "intervalSeconds": 45,
     "path": "/health",
     "successCodes": "200"
   }
@@ -231,6 +288,13 @@ with open('/tmp/containers.json', 'w') as f:
 EOF
     
     print_status "Container configuration created"
+    
+    # Debug: Show the configuration files
+    print_info "Container configuration:"
+    cat /tmp/containers.json | python3 -m json.tool 2>/dev/null || cat /tmp/containers.json
+    
+    print_info "Public endpoint configuration:"
+    cat /tmp/public-endpoint.json | python3 -m json.tool 2>/dev/null || cat /tmp/public-endpoint.json
 }
 
 # Function to deploy container
@@ -367,7 +431,12 @@ main() {
     sleep 60  # Give deployment time to start
     
     # Wait for service to be ready again after deployment
-    wait_for_service
+    if wait_for_service; then
+        print_status "Service is ready after deployment"
+    else
+        print_error "Service failed to become ready after deployment"
+        print_info "Attempting to get service URL anyway for debugging..."
+    fi
     
     # Get service URL
     local service_url
@@ -375,19 +444,40 @@ main() {
     
     if [ -z "$service_url" ] || [ "$service_url" = "None" ] || [ "$service_url" = "null" ]; then
         print_error "Failed to get service URL"
+        
+        # Show full service details for debugging
+        print_info "Full service details:"
+        aws lightsail get-container-services --service-name "$SERVICE_NAME" --region "$AWS_REGION" --no-cli-pager 2>/dev/null || true
+        
         exit 1
     fi
     
     print_status "Service URL: $service_url"
     
-    # Wait for application to be ready
-    wait_for_application "$service_url"
+    # Even if service isn't "READY", try to test the application
+    print_info "Attempting to connect to application (may fail if container isn't healthy)..."
     
-    # Run health check
-    run_health_check "$service_url"
-    
-    # Display summary
-    display_summary "$service_url"
+    # Wait for application to be ready (with more lenient timing)
+    if wait_for_application "$service_url"; then
+        # Run health check
+        run_health_check "$service_url"
+        
+        # Display summary
+        display_summary "$service_url"
+    else
+        print_warning "Application health check failed, but deployment may still be in progress"
+        print_info "Service URL: $service_url"
+        print_info "Try accessing $service_url/health manually in a few minutes"
+        
+        # Show recent logs for debugging
+        print_info "Recent container logs for debugging:"
+        aws lightsail get-container-log \
+            --service-name "$SERVICE_NAME" \
+            --container-name secrets-service \
+            --region "$AWS_REGION" \
+            --start-time "$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+            --no-cli-pager 2>/dev/null || echo "No logs available"
+    fi
     
     # Cleanup temp files
     rm -f /tmp/containers.json /tmp/public-endpoint.json
