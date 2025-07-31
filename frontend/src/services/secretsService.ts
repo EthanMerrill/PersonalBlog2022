@@ -16,8 +16,12 @@ class SecretsService {
     // Use environment variable for the backend URL
     this.baseUrl = import.meta.env.VITE_SECRETS_SERVICE_URL || "http://localhost:8080";
 
-    // Try to load existing token from localStorage
-    this.token = localStorage.getItem("secrets_token");
+    // Try to load existing token from localStorage (guard for test environments)
+    if (typeof localStorage !== "undefined") {
+      this.token = localStorage.getItem("secrets_token");
+    } else {
+      this.token = null;
+    }
   }
 
   /**

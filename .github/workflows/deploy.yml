@@ -178,7 +178,7 @@ jobs:
           - **Health Check**: [${{ steps.outputs.outputs.service_url }}health](${{ steps.outputs.outputs.service_url }}/health)
 
           ## 🛠 Management Commands
-          \`\`\`bash
+          ```bash
           # View service status
           aws lightsail get-container-services --service-name ${{ env.SERVICE_NAME }} --region ${{ env.AWS_REGION }}
 
@@ -190,7 +190,7 @@ jobs:
 
           # Upgrade service power
           aws lightsail update-container-service --service-name ${{ env.SERVICE_NAME }} --power micro --region ${{ env.AWS_REGION }}
-          \`\`\`
+          ````
           EOF
 
   notify:
