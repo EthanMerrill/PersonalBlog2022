@@ -51,6 +51,8 @@ jobs:
       - name: Build application
         env:
           VITE_SECRETS_SERVICE_URL: ${{ secrets.VITE_SECRETS_SERVICE_URL }}
+          VITE_SECRETS_SERVICE_PASSWORD: ${{ secrets.VITE_SECRETS_SERVICE_PASSWORD }}
+          VITE_SECRETS_SERVICE_USERNAME: ${{ secrets.VITE_SECRETS_SERVICE_USERNAME }}
         run: npm run build
 
       - name: Upload build artifacts
