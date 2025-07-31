@@ -1,0 +1,214 @@
+name: Deploy Secrets Service to AWS Lightsail Containers
+
+on:
+  push:
+    branches: [master]
+    paths: ["backend/**"]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force deployment even if no backend changes"
+        required: false
+        default: "false"
+
+env:
+  AWS_REGION: us-east-1
+  SERVICE_NAME: secrets-service
+
+jobs:
+  test:
+    name: Test Go Application
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache-dependency-path: backend/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build application
+        run: go build -o bin/secrets-service .
+
+  deploy:
+    name: Deploy to AWS Lightsail Containers
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Lightsail Control Plugin
+        run: |
+          # Install lightsailctl plugin for AWS CLI push-container-image command
+          echo "📦 Installing Lightsail Control Plugin..."
+
+          # Download the plugin
+          curl -L -o lightsailctl https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl
+
+          # Make it executable and move to system path
+          chmod +x lightsailctl
+          sudo mv lightsailctl /usr/local/bin/lightsailctl
+
+          # Verify installation
+          echo "✅ lightsailctl plugin installed at $(which lightsailctl || echo 'not found in PATH')"
+
+          # The AWS CLI will automatically find and use this plugin for push-container-image commands
+
+      - name: Deploy to Lightsail Containers
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
+          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          POWER: nano
+          SCALE: 1
+        run: |
+          chmod +x deploy-container.sh
+          ./deploy-container.sh
+
+      - name: Get deployment outputs
+        id: outputs
+        run: |
+          # Wait a moment for the service to be fully ready
+          sleep 30
+
+          SERVICE_URL=$(aws lightsail get-container-services \
+            --service-name ${{ env.SERVICE_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'containerServices[0].url' \
+            --output text \
+            --no-cli-pager)
+
+          if [ "$SERVICE_URL" = "None" ] || [ "$SERVICE_URL" = "null" ] || [ -z "$SERVICE_URL" ]; then
+            echo "❌ Failed to get service URL"
+            exit 1
+          fi
+
+          echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "🔗 Service URL: $SERVICE_URL"
+
+      - name: Run health check
+        run: |
+          SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
+          # Ensure URLs are constructed correctly (avoid double slashes)
+          HEALTH_URL="${SERVICE_URL}health"
+
+          echo "🔍 Running comprehensive health check..."
+          HEALTH_RESPONSE=$(curl -s "$HEALTH_URL" 2>/dev/null || echo "")
+          echo "Health check response: $HEALTH_RESPONSE"
+
+          # Verify the response contains expected health check data
+          if echo "$HEALTH_RESPONSE" | grep -q "status"; then
+            echo "✅ Health check passed!"
+            
+            # Test auth endpoint as well
+            echo "🔐 Testing auth endpoint..."
+            AUTH_URL="${SERVICE_URL}auth"
+            AUTH_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
+              -H "Content-Type: application/json" \
+              -d '{"username":"invalid","password":"invalid"}' \
+              "$AUTH_URL" 2>/dev/null || echo "000")
+            
+            HTTP_CODE="${AUTH_RESPONSE: -3}"
+            if [ "$HTTP_CODE" = "401" ]; then
+              echo "✅ Auth endpoint working correctly (rejects invalid credentials)"
+            else
+              echo "⚠️ Auth endpoint returned HTTP $HTTP_CODE (expected 401)"
+            fi
+          else
+            echo "❌ Health check failed - unexpected response"
+            echo "🔍 Checking recent container logs..."
+            aws lightsail get-container-log \
+              --service-name ${{ env.SERVICE_NAME }} \
+              --container-name secrets-service \
+              --region ${{ env.AWS_REGION }} \
+              --start-time "$(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S)" \
+              --no-cli-pager || true
+            exit 1
+          fi
+
+      - name: Create deployment summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # 🚀 Deployment Successful!
+
+          ## 📋 Deployment Details
+          - **Service Name**: \`${{ env.SERVICE_NAME }}`
+          - **Region**: \`${{ env.AWS_REGION }}`
+          - **Service URL**: \`${{ steps.outputs.outputs.service_url }}`
+          - **Commit**: \`${{ github.sha }}`
+          - **Branch**: \`${{ github.ref_name }}`
+
+          ## 🔗 Application URLs
+          - **Application**: [${{ steps.outputs.outputs.service_url }}](${{ steps.outputs.outputs.service_url }})
+          - **Health Check**: [${{ steps.outputs.outputs.service_url }}health](${{ steps.outputs.outputs.service_url }}/health)
+
+          ## 🛠 Management Commands
+          ```bash
+          # View service status
+          aws lightsail get-container-services --service-name ${{ env.SERVICE_NAME }} --region ${{ env.AWS_REGION }}
+
+          # View container logs
+          aws lightsail get-container-log --service-name ${{ env.SERVICE_NAME }} --container-name secrets-service --region ${{ env.AWS_REGION }}
+
+          # Scale service (increase replicas)
+          aws lightsail update-container-service --service-name ${{ env.SERVICE_NAME }} --scale 2 --region ${{ env.AWS_REGION }}
+
+          # Upgrade service power
+          aws lightsail update-container-service --service-name ${{ env.SERVICE_NAME }} --power micro --region ${{ env.AWS_REGION }}
+          ````
+          EOF
+
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [test, deploy]
+    if: always()
+
+    steps:
+      - name: Notify on success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "✅ Deployment completed successfully!"
+          # Add Slack/Discord/Email notification here if needed
+
+      - name: Notify on failure
+        if: needs.test.result == 'failure' || needs.deploy.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          # Add failure notification here if needed
+          exit 1

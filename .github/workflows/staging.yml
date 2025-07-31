@@ -1,0 +1,294 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop, staging]
+    paths: ["backend/**"]
+  pull_request:
+    branches: [main]
+    paths: ["backend/**"]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: secrets-service-staging
+
+jobs:
+  test:
+    name: Test Go Application
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Build application
+        run: go build -o bin/secrets-service .
+
+      - name: Run security checks
+        run: |
+          # Install gosec
+          go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+
+          # Run security scan
+          gosec ./...
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check stack and instance status
+        id: check-stack
+        run: |
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            STACK_STATUS=$(aws cloudformation describe-stacks \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }} \
+              --query 'Stacks[0].StackStatus' \
+              --output text)
+            
+            echo "stack_exists=true" >> $GITHUB_OUTPUT
+            echo "stack_status=$STACK_STATUS" >> $GITHUB_OUTPUT
+            echo "Stack ${{ env.STACK_NAME }} exists with status: $STACK_STATUS"
+            
+            # Check if stack is in a failed state that prevents updates
+            if [[ "$STACK_STATUS" == *"FAILED"* ]] || [[ "$STACK_STATUS" == *"ROLLBACK"* ]]; then
+              echo "needs_recreation=true" >> $GITHUB_OUTPUT
+              echo "Stack is in failed state and needs to be recreated"
+            elif [[ "$STACK_STATUS" == "CREATE_COMPLETE" ]] || [[ "$STACK_STATUS" == "UPDATE_COMPLETE" ]]; then
+              # Stack is healthy, now check EC2 instance state
+              echo "Checking EC2 instance state..."
+              INSTANCE_ID=$(aws cloudformation describe-stack-resources \
+                --stack-name ${{ env.STACK_NAME }} \
+                --region ${{ env.AWS_REGION }} \
+                --logical-resource-id "EC2Instance" \
+                --query 'StackResources[0].PhysicalResourceId' \
+                --output text 2>/dev/null || echo "")
+              
+              if [ -n "$INSTANCE_ID" ] && [ "$INSTANCE_ID" != "None" ]; then
+                INSTANCE_STATE=$(aws ec2 describe-instances \
+                  --instance-ids "$INSTANCE_ID" \
+                  --region ${{ env.AWS_REGION }} \
+                  --query 'Reservations[0].Instances[0].State.Name' \
+                  --output text 2>/dev/null || echo "not-found")
+                
+                echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+                echo "instance_state=$INSTANCE_STATE" >> $GITHUB_OUTPUT
+                echo "EC2 Instance ID: $INSTANCE_ID"
+                echo "EC2 Instance State: $INSTANCE_STATE"
+                
+                # Check if instance is terminated or terminating
+                if [[ "$INSTANCE_STATE" == "terminated" ]] || [[ "$INSTANCE_STATE" == "terminating" ]] || [[ "$INSTANCE_STATE" == "not-found" ]]; then
+                  echo "needs_recreation=true" >> $GITHUB_OUTPUT
+                  echo "EC2 instance is terminated/terminating or not found - stack needs recreation"
+                else
+                  echo "needs_recreation=false" >> $GITHUB_OUTPUT
+                  echo "EC2 instance is in acceptable state: $INSTANCE_STATE"
+                fi
+              else
+                echo "needs_recreation=true" >> $GITHUB_OUTPUT
+                echo "Could not find EC2 instance in stack - stack needs recreation"
+              fi
+            else
+              echo "needs_recreation=false" >> $GITHUB_OUTPUT
+              echo "Stack is in transitional state, will attempt update"
+            fi
+          else
+            echo "stack_exists=false" >> $GITHUB_OUTPUT
+            echo "needs_recreation=false" >> $GITHUB_OUTPUT
+            echo "Stack ${{ env.STACK_NAME }} does not exist"
+          fi
+
+      - name: Delete failed stack or recreate for terminated instance
+        if: steps.check-stack.outputs.needs_recreation == 'true'
+        run: |
+          if [[ "${{ steps.check-stack.outputs.stack_exists }}" == "true" ]]; then
+            echo "Deleting stack ${{ env.STACK_NAME }}..."
+            if [[ -n "${{ steps.check-stack.outputs.instance_state }}" ]]; then
+              echo "Reason: EC2 instance is in state '${{ steps.check-stack.outputs.instance_state }}'"
+            else
+              echo "Reason: Stack is in failed state '${{ steps.check-stack.outputs.stack_status }}'"
+            fi
+            
+            aws cloudformation delete-stack \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }}
+
+            echo "Waiting for stack deletion to complete..."
+            aws cloudformation wait stack-delete-complete \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }}
+
+            echo "Stack deletion completed"
+          else
+            echo "Stack does not exist, proceeding with creation"
+          fi
+
+      - name: Deploy to staging
+        run: |
+          aws cloudformation deploy \
+            --template-file cloudformation-template-docker.yaml \
+            --stack-name ${{ env.STACK_NAME }} \
+            --parameter-overrides \
+              KeyPairName="${{ secrets.AWS_KEY_PAIR_NAME }}" \
+              JWTSecret="${{ secrets.JWT_SECRET_STAGING }}" \
+              AuthUsername="${{ secrets.AUTH_USERNAME_STAGING }}" \
+              AuthPassword="${{ secrets.AUTH_PASSWORD_STAGING }}" \
+              AllowedOrigins="${{ secrets.ALLOWED_ORIGINS_STAGING }}" \
+              OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
+              FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
+              GitHubRepo="https://github.com/${{ github.repository }}.git" \
+              InstanceType="t2.micro" \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ env.AWS_REGION }} \
+            --no-fail-on-empty-changeset
+
+      - name: Get staging outputs
+        id: outputs
+        run: |
+          PUBLIC_IP=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`PublicIP`].OutputValue' \
+            --output text)
+
+          APPLICATION_URL=$(aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApplicationURL`].OutputValue' \
+            --output text)
+
+          echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "application_url=$APPLICATION_URL" >> $GITHUB_OUTPUT
+
+      - name: Wait for staging application
+        run: |
+          echo "Waiting for staging application at ${{ steps.outputs.outputs.application_url }}/health"
+          for i in {1..30}; do
+            if curl -f -s "${{ steps.outputs.outputs.application_url }}/health" >/dev/null 2>&1; then
+              echo "✅ Staging application is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Staging application failed to respond"
+              exit 1
+            fi
+            echo "⏳ Attempt $i/30 - waiting 10 seconds..."
+            sleep 10
+          done
+
+      - name: Run integration tests
+        run: |
+          BASE_URL="${{ steps.outputs.outputs.application_url }}"
+
+          echo "Running integration tests against: $BASE_URL"
+
+          # Test health endpoint
+          HEALTH_RESPONSE=$(curl -s "$BASE_URL/health")
+          echo "Health check: $HEALTH_RESPONSE"
+
+          # Test that protected endpoints return 401 without auth
+          AUTH_TEST=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/keys/openai")
+          if [ "$AUTH_TEST" != "401" ]; then
+            echo "❌ Authentication test failed - expected 401, got $AUTH_TEST"
+            exit 1
+          fi
+          echo "✅ Authentication test passed"
+
+          # Test CORS headers
+          CORS_TEST=$(curl -s -I -H "Origin: https://ethanmerrill.com" "$BASE_URL/health" | grep -i "access-control-allow-origin" || true)
+          if [ -n "$CORS_TEST" ]; then
+            echo "✅ CORS test passed: $CORS_TEST"
+          else
+            echo "⚠️  CORS headers not found (might be expected)"
+          fi
+
+      - name: Create staging summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # 🧪 Staging Deployment Successful!
+
+          ## 📋 Staging Details
+          - **Stack Name**: \`${{ env.STACK_NAME }}\`
+          - **Public IP**: \`${{ steps.outputs.outputs.public_ip }}\`
+          - **Branch**: \`${{ github.ref_name }}\`
+          - **Commit**: \`${{ github.sha }}\`
+
+          ## 🔗 Staging URLs
+          - **Application**: [${{ steps.outputs.outputs.application_url }}](${{ steps.outputs.outputs.application_url }})
+          - **Health Check**: [${{ steps.outputs.outputs.application_url }}/health](${{ steps.outputs.outputs.application_url }}/health)
+
+          ## ✅ Tests Passed
+          - Go unit tests
+          - Security scan (gosec)
+          - Integration tests
+          - Health check verification
+
+          ## 🚀 Ready for Production
+          This staging deployment can be promoted to production by merging to main branch.
+          EOF
+
+  cleanup-on-pr:
+    name: Cleanup Staging (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Delete staging stack
+        run: |
+          echo "Cleaning up staging environment for closed PR..."
+          if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            aws cloudformation delete-stack \
+              --stack-name ${{ env.STACK_NAME }} \
+              --region ${{ env.AWS_REGION }}
+            echo "✅ Staging stack deletion initiated"
+          else
+            echo "ℹ️  No staging stack found to delete"
+          fi
