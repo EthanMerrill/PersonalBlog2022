@@ -124,6 +124,7 @@ jobs:
       - name: Run health check
         run: |
           SERVICE_URL="${{ steps.outputs.outputs.service_url }}"
+          # Ensure URLs are constructed correctly (avoid double slashes)
           HEALTH_URL="${SERVICE_URL}health"
 
           echo "🔍 Running comprehensive health check..."
@@ -136,10 +137,11 @@ jobs:
             
             # Test auth endpoint as well
             echo "🔐 Testing auth endpoint..."
+            AUTH_URL="${SERVICE_URL}auth"
             AUTH_RESPONSE=$(curl -s -w "%{http_code}" -X POST \
               -H "Content-Type: application/json" \
               -d '{"username":"invalid","password":"invalid"}' \
-              "$SERVICE_URL/auth" 2>/dev/null || echo "000")
+              "$AUTH_URL" 2>/dev/null || echo "000")
             
             HTTP_CODE="${AUTH_RESPONSE: -3}"
             if [ "$HTTP_CODE" = "401" ]; then
@@ -165,15 +167,15 @@ jobs:
           # 🚀 Deployment Successful!
 
           ## 📋 Deployment Details
-          - **Service Name**: \`${{ env.SERVICE_NAME }}\`
-          - **Region**: \`${{ env.AWS_REGION }}\`
-          - **Service URL**: \`${{ steps.outputs.outputs.service_url }}\`
-          - **Commit**: \`${{ github.sha }}\`
-          - **Branch**: \`${{ github.ref_name }}\`
+          - **Service Name**: \`${{ env.SERVICE_NAME }}`
+          - **Region**: \`${{ env.AWS_REGION }}`
+          - **Service URL**: \`${{ steps.outputs.outputs.service_url }}`
+          - **Commit**: \`${{ github.sha }}`
+          - **Branch**: \`${{ github.ref_name }}`
 
           ## 🔗 Application URLs
           - **Application**: [${{ steps.outputs.outputs.service_url }}](${{ steps.outputs.outputs.service_url }})
-          - **Health Check**: [${{ steps.outputs.outputs.service_url }}/health](${{ steps.outputs.outputs.service_url }}/health)
+          - **Health Check**: [${{ steps.outputs.outputs.service_url }}health](${{ steps.outputs.outputs.service_url }}/health)
 
           ## 🛠 Management Commands
           \`\`\`bash
