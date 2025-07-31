@@ -8,11 +8,6 @@ export interface AuthResponse {
   error?: string;
 }
 
-export interface SecretResponse {
-  secret?: string;
-  error?: string;
-}
-
 class SecretsService {
   private baseUrl: string;
   private token: string | null = null;
@@ -62,55 +57,6 @@ class SecretsService {
   }
 
   /**
-   * Get OpenAI API key
-   */
-  async getOpenAIKey(): Promise<string> {
-    return this.getSecret("openai");
-  }
-
-  /**
-   * Get a specific secret by name
-   */
-  async getSecret(secretName: string): Promise<string> {
-    if (!this.token) {
-      throw new Error("Not authenticated. Please call authenticate() first.");
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/api/secrets/${secretName}`, {
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-      });
-
-      if (response.status === 401) {
-        // Token expired or invalid
-        this.clearToken();
-        throw new Error("Authentication expired. Please re-authenticate.");
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch secret: ${response.status}`);
-      }
-
-      const data: SecretResponse = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      if (!data.secret) {
-        throw new Error("Secret not found");
-      }
-
-      return data.secret;
-    } catch (error) {
-      console.error(`Error fetching secret ${secretName}:`, error);
-      throw error;
-    }
-  }
-
-  /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
@@ -136,6 +82,13 @@ class SecretsService {
       console.error("Health check failed:", error);
       return false;
     }
+  }
+
+  /**
+   * Get the current JWT token
+   */
+  getToken(): string | null {
+    return this.token;
   }
 }
 
