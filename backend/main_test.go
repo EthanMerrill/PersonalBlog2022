@@ -40,8 +40,8 @@ func TestHealthHandler(t *testing.T) {
 
 func TestAuthHandler(t *testing.T) {
 	// Set environment variables for test
-	t.Setenv("AUTH_USERNAME", "testuser")
-	t.Setenv("AUTH_PASSWORD", "testpass")
+	t.Setenv("VITE_SECRETS_SERVICE_USERNAME", "testuser")
+	t.Setenv("VITE_SECRETS_SERVICE_PASSWORD", "testpass")
 
 	service := &SecretService{
 		config: &Config{
@@ -89,8 +89,8 @@ func TestAuthHandler(t *testing.T) {
 
 func TestAuthHandlerInvalidCredentials(t *testing.T) {
 	// Set environment variables for test
-	t.Setenv("AUTH_USERNAME", "testuser")
-	t.Setenv("AUTH_PASSWORD", "testpass")
+	t.Setenv("VITE_SECRETS_SERVICE_USERNAME", "testuser")
+	t.Setenv("VITE_SECRETS_SERVICE_PASSWORD", "testpass")
 
 	service := &SecretService{
 		config: &Config{

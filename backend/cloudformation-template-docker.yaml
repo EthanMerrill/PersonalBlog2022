@@ -150,8 +150,8 @@ Resources:
           JWT_SECRET=${JWTSecret}
           PORT=8080
           ALLOWED_ORIGIN=${AllowedOrigins}
-          AUTH_USERNAME=${AuthUsername}
-          AUTH_PASSWORD=${AuthPassword}
+          VITE_SECRETS_SERVICE_USERNAME=${AuthUsername}
+          VITE_SECRETS_SERVICE_PASSWORD=${AuthPassword}
           OPENAI_API_KEY=${OpenAIAPIKey}
           FIREBASE_API_KEY=${FirebaseAPIKey}
           EOF

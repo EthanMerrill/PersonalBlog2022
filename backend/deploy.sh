@@ -60,17 +60,17 @@ deploy_stack() {
     local operation="$1"
     
     # Required parameters - these should be set as environment variables
-    if [ -z "$KEY_PAIR_NAME" ] || [ -z "$JWT_SECRET" ] || [ -z "$AUTH_USERNAME" ] || [ -z "$AUTH_PASSWORD" ] || [ -z "$GITHUB_REPO" ]; then
+    if [ -z "$KEY_PAIR_NAME" ] || [ -z "$JWT_SECRET" ] || [ -z "$VITE_SECRETS_SERVICE_USERNAME" ] || [ -z "$VITE_SECRETS_SERVICE_PASSWORD" ] || [ -z "$GITHUB_REPO" ]; then
         print_error "Missing required environment variables:"
-        print_error "KEY_PAIR_NAME, JWT_SECRET, AUTH_USERNAME, AUTH_PASSWORD, GITHUB_REPO"
+        print_error "KEY_PAIR_NAME, JWT_SECRET, VITE_SECRETS_SERVICE_USERNAME, VITE_SECRETS_SERVICE_PASSWORD, GITHUB_REPO"
         exit 1
     fi
     
     local parameters=(
         "ParameterKey=KeyPairName,ParameterValue=$KEY_PAIR_NAME"
         "ParameterKey=JWTSecret,ParameterValue=$JWT_SECRET"
-        "ParameterKey=AuthUsername,ParameterValue=$AUTH_USERNAME"
-        "ParameterKey=AuthPassword,ParameterValue=$AUTH_PASSWORD"
+        "ParameterKey=AuthUsername,ParameterValue=$VITE_SECRETS_SERVICE_USERNAME"
+        "ParameterKey=AuthPassword,ParameterValue=$VITE_SECRETS_SERVICE_PASSWORD"
         "ParameterKey=GitHubRepo,ParameterValue=$GITHUB_REPO"
         "ParameterKey=InstanceType,ParameterValue=${INSTANCE_TYPE:-t2.micro}"
     )

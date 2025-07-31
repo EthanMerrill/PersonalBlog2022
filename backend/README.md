@@ -48,8 +48,8 @@ PORT=8080
 ALLOWED_ORIGIN=https://ethanmerrill.com
 
 # Authentication credentials for the secrets service
-AUTH_USERNAME=admin
-AUTH_PASSWORD=your_strong_password_here
+VITE_SECRETS_SERVICE_USERNAME=admin
+VITE_SECRETS_SERVICE_PASSWORD=your_strong_password_here
 
 # API Keys (required)
 OPENAI_API_KEY=sk-your-openai-api-key-here
@@ -231,8 +231,8 @@ This project is configured for easy deployment to AWS Lightsail Container Servic
    - `AWS_ACCESS_KEY_ID` - Your AWS access key
    - `AWS_SECRET_ACCESS_KEY` - Your AWS secret key
    - `JWT_SECRET` - JWT secret for authentication
-   - `AUTH_USERNAME` - Basic auth username
-   - `AUTH_PASSWORD` - Basic auth password
+   - `VITE_SECRETS_SERVICE_USERNAME` - Basic auth username
+   - `VITE_SECRETS_SERVICE_PASSWORD` - Basic auth password
    - `ALLOWED_ORIGINS` (optional) - CORS allowed origins
    - `OPENAI_API_KEY` (optional) - OpenAI API key
    - `FIREBASE_API_KEY` (optional) - Firebase API key
@@ -253,8 +253,8 @@ This project is configured for easy deployment to AWS Lightsail Container Servic
 ```bash
 # Generate a secure JWT secret
 export JWT_SECRET="$(openssl rand -base64 32)"
-export AUTH_USERNAME="admin"
-export AUTH_PASSWORD="your-strong-password"
+export VITE_SECRETS_SERVICE_USERNAME="admin"
+export VITE_SECRETS_SERVICE_PASSWORD="your-strong-password"
 
 # Optional: Configure container size and scale
 export POWER="nano"    # nano, micro, small, medium, large, xlarge

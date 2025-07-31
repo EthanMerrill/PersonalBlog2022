@@ -38,13 +38,13 @@ validate_requirements() {
         exit 1
     fi
     
-    if [ -z "$AUTH_USERNAME" ]; then
-        print_error "AUTH_USERNAME environment variable is required"
+    if [ -z "$VITE_SECRETS_SERVICE_USERNAME" ]; then
+        print_error "VITE_SECRETS_SERVICE_USERNAME environment variable is required"
         exit 1
     fi
     
-    if [ -z "$AUTH_PASSWORD" ]; then
-        print_error "AUTH_PASSWORD environment variable is required"
+    if [ -z "$VITE_SECRETS_SERVICE_PASSWORD" ]; then
+        print_error "VITE_SECRETS_SERVICE_PASSWORD environment variable is required"
         exit 1
     fi
     
@@ -162,8 +162,8 @@ create_container_config() {
     "environment": {
       "JWT_SECRET": "$JWT_SECRET",
       "PORT": "8080",
-      "AUTH_USERNAME": "$AUTH_USERNAME",
-      "AUTH_PASSWORD": "$AUTH_PASSWORD"
+      "VITE_SECRETS_SERVICE_USERNAME": "$VITE_SECRETS_SERVICE_USERNAME",
+      "VITE_SECRETS_SERVICE_PASSWORD": "$VITE_SECRETS_SERVICE_PASSWORD"
     },
     "ports": {
       "8080": "HTTP"
@@ -403,8 +403,8 @@ show_help() {
     echo
     echo "Required Environment Variables:"
     echo "  JWT_SECRET        - JWT secret for authentication"
-    echo "  AUTH_USERNAME     - Basic auth username"
-    echo "  AUTH_PASSWORD     - Basic auth password"
+    echo "  VITE_SECRETS_SERVICE_USERNAME     - Basic auth username"
+    echo "  VITE_SECRETS_SERVICE_PASSWORD     - Basic auth password"
     echo
     echo "Optional Environment Variables:"
     echo "  AWS_REGION        - AWS region (default: us-east-1)"
@@ -418,7 +418,7 @@ show_help() {
     echo "  -h, --help        Show this help message"
     echo
     echo "Examples:"
-    echo "  JWT_SECRET=secret AUTH_USERNAME=admin AUTH_PASSWORD=pass $0"
+    echo "  JWT_SECRET=secret VITE_SECRETS_SERVICE_USERNAME=admin VITE_SECRETS_SERVICE_PASSWORD=pass $0"
 }
 
 # Parse command line arguments

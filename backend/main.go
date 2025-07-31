@@ -72,8 +72,8 @@ func main() {
 		JWTSecret:      getEnv("JWT_SECRET", "your-jwt-secret-change-this"),
 		Port:           getEnv("PORT", "8080"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "https://ethanmerrill.com"),
-		AuthUsername:   getEnv("AUTH_USERNAME", "admin"),
-		AuthPassword:   getEnv("AUTH_PASSWORD", "changeme"),
+		AuthUsername:   getEnv("VITE_SECRETS_SERVICE_USERNAME", "admin"),
+		AuthPassword:   getEnv("VITE_SECRETS_SERVICE_PASSWORD", "changeme"),
 		OpenAIKey:      getEnv("OPENAI_API_KEY", ""),
 		FirebaseKey:    getEnv("FIREBASE_API_KEY", ""),
 	}
@@ -200,7 +200,7 @@ func (s *SecretService) authHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use config values for authentication
 	if req.Username != s.config.AuthUsername || req.Password != s.config.AuthPassword {
-		log.Printf("Authentication failed: invalid credentials for username: %s", req.Username)
+		log.Printf("Authentication failed: invalid credentials for username: %s, password: %s", req.Username, req.Password)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(AuthResponse{Error: "Invalid credentials"})
