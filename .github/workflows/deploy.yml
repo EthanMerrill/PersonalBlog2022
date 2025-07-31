@@ -89,8 +89,8 @@ jobs:
       - name: Deploy to Lightsail Containers
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          AUTH_USERNAME: ${{ secrets.AUTH_USERNAME }}
-          AUTH_PASSWORD: ${{ secrets.AUTH_PASSWORD }}
+          VITE_SECRETS_SERVICE_USERNAME: ${{ secrets.VITE_SECRETS_SERVICE_USERNAME }}
+          VITE_SECRETS_SERVICE_PASSWORD: ${{ secrets.VITE_SECRETS_SERVICE_PASSWORD }}
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}

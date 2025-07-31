@@ -172,8 +172,8 @@ jobs:
             --parameter-overrides \
               KeyPairName="${{ secrets.AWS_KEY_PAIR_NAME }}" \
               JWTSecret="${{ secrets.JWT_SECRET_STAGING }}" \
-              AuthUsername="${{ secrets.AUTH_USERNAME_STAGING }}" \
-              AuthPassword="${{ secrets.AUTH_PASSWORD_STAGING }}" \
+              AuthUsername="${{ secrets.VITE_SECRETS_SERVICE_USERNAME_STAGING }}" \
+              AuthPassword="${{ secrets.VITE_SECRETS_SERVICE_PASSWORD_STAGING }}" \
               AllowedOrigins="${{ secrets.ALLOWED_ORIGINS_STAGING }}" \
               OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}" \
               FirebaseAPIKey="${{ secrets.FIREBASE_API_KEY }}" \
