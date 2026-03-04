@@ -97,7 +97,17 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 				}
 
 				if (!response.ok) {
-					throw new Error(`Backend chat API error: ${response.status}`);
+					let backendError = `Backend chat API error: ${response.status}`;
+					try {
+						const errorData = await response.json();
+						if (errorData?.error && typeof errorData.error === "string") {
+							backendError = errorData.error;
+						}
+					} catch {
+						// Ignore parse failures and keep fallback error message
+					}
+
+					throw new Error(backendError);
 				}
 
 				const data = await response.json();

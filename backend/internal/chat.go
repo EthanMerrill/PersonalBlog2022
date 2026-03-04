@@ -1,10 +1,11 @@
 package internal
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -73,7 +74,7 @@ func (s *ChatService) ChatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	openaiRequest, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", strings.NewReader(string(openaiBody)))
+	openaiRequest, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(openaiBody))
 	if err != nil {
 		log.Printf("Failed to create OpenAI request: %v", err)
 		w.Header().Set("Content-Type", "application/json")
@@ -94,11 +95,37 @@ func (s *ChatService) ChatHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer openaiResp.Body.Close()
 
-	if openaiResp.StatusCode != 200 {
-		log.Printf("OpenAI API returned status: %d", openaiResp.StatusCode)
+	if openaiResp.StatusCode != http.StatusOK {
+		responseBody, readErr := io.ReadAll(openaiResp.Body)
+		if readErr != nil {
+			log.Printf("OpenAI API returned status: %d (failed reading error body: %v)", openaiResp.StatusCode, readErr)
+		} else {
+			log.Printf("OpenAI API returned status: %d body: %s", openaiResp.StatusCode, string(responseBody))
+		}
+
+		errorMessage := "OpenAI API error"
+		if extracted := extractOpenAIErrorMessage(responseBody); extracted != "" {
+			errorMessage = extracted
+		}
+
 		w.Header().Set("Content-Type", "application/json")
+		if openaiResp.StatusCode == http.StatusTooManyRequests {
+			if retryAfter := openaiResp.Header.Get("Retry-After"); retryAfter != "" {
+				w.Header().Set("Retry-After", retryAfter)
+			}
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(ChatResponse{Error: "AI assistant is rate-limited right now. Please try again in a moment."})
+			return
+		}
+
+		if openaiResp.StatusCode >= 500 {
+			w.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(w).Encode(ChatResponse{Error: "Upstream AI service is temporarily unavailable. Please try again."})
+			return
+		}
+
 		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(ChatResponse{Error: "OpenAI API error"})
+		json.NewEncoder(w).Encode(ChatResponse{Error: errorMessage})
 		return
 	}
 
@@ -132,4 +159,22 @@ func (s *ChatService) ChatHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("OpenAI chat response sent")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ChatResponse{Response: aiResponse})
+}
+
+func extractOpenAIErrorMessage(body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+
+	var openAIError struct {
+		Error struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+
+	if err := json.Unmarshal(body, &openAIError); err != nil {
+		return ""
+	}
+
+	return openAIError.Error.Message
 }
