@@ -10,6 +10,10 @@ on:
         description: "Force deployment even if no backend changes"
         required: false
         default: "false"
+      deploy_to_lightsail:
+        description: "Deploy to AWS Lightsail (disabled by default; Coolify handles prod deploys)"
+        required: false
+        default: "false"
 
 env:
   AWS_REGION: us-east-1
@@ -46,6 +50,7 @@ jobs:
     name: Deploy to AWS Lightsail Containers
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_to_lightsail == 'true'
     defaults:
       run:
         working-directory: ./backend
