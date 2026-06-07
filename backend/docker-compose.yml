@@ -3,8 +3,8 @@ version: "3.8"
 services:
   secrets-service:
     build: .
-    ports:
-      - "8080:8080"
+    networks:
+      - coolify
     environment:
       - VAULT_ADDR=${VAULT_ADDR}
       - VAULT_TOKEN=${VAULT_TOKEN}
@@ -24,3 +24,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.portfolio.rule=Host(`portfolio.merrill-api.com`)
+      - traefik.http.routers.portfolio.entrypoints=http
+      - traefik.http.services.portfolio.loadbalancer.server.port=8080
+
+networks:
+  coolify:
+    external: true
