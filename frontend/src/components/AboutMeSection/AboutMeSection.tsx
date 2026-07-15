@@ -12,8 +12,8 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 	const [isProcessingAI, setIsProcessingAI] = useState(false);
 	const authCredentials = useMemo(
 		() => ({
-			username: import.meta.env.VITE_SECRETS_SERVICE_USERNAME || "VITE_SECRETS_SERVICE_USERNAME not set!",
-			password: import.meta.env.VITE_SECRETS_SERVICE_PASSWORD || "VITE_SECRETS_SERVICE_PASSWORD not set!",
+			username: process.env.NEXT_PUBLIC_SECRETS_SERVICE_USERNAME || "NEXT_PUBLIC_SECRETS_SERVICE_USERNAME not set!",
+			password: process.env.NEXT_PUBLIC_SECRETS_SERVICE_PASSWORD || "NEXT_PUBLIC_SECRETS_SERVICE_PASSWORD not set!",
 		}),
 		[],
 	);
@@ -78,7 +78,7 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 		async (message: string): Promise<string> => {
 			try {
 				const sendChatRequest = async (token: string | null): Promise<Response> =>
-					fetch(import.meta.env.VITE_SECRETS_SERVICE_URL + "/api/chat", {
+					fetch(process.env.NEXT_PUBLIC_SECRETS_SERVICE_URL + "/api/chat", {
 						method: "POST",
 						headers: {
 							"Content-Type": "application/json",

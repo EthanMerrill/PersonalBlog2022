@@ -1,8 +1,4 @@
 @use "sass:math";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 
 // Colors
 $main-text-color: hsla(0, 0%, 34%, 1);
@@ -14,7 +10,7 @@ $aur-1: #025b48;
 $aur-2: #1c866c;
 $aur-3: #1c8835;
 $aur-4: #388ba4bb;
-$banner-background-color:hsla(0, 0%, 18%, 0.9);
+$banner-background-color: hsla(0, 0%, 18%, 0.9);
 
 // title font size
 $title-font-size: 1.5em;
@@ -22,10 +18,14 @@ $title-font-size: 1.5em;
 // animations
 $animate-underline: all 0.5s ease-in-out;
 
-$animate-fade-in: fadeIn .5s ease-in-out;
+$animate-fade-in: fadeIn 0.5s ease-in-out;
 @keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
 }
 
 $animate-aurora: fly 15s linear alternate;
@@ -34,340 +34,343 @@ $animate-aurora: fly 15s linear alternate;
 $banner-height: 25vh;
 $banner-angle: 10deg;
 
-
 @function shadow($color) {
-  @return 0 0 45vmax 45vmax #{$color};
+	@return 0 0 45vmax 45vmax #{$color};
 }
 
 @keyframes hueRotate {
-  to {
-    filter: hue-rotate(360deg);
-  }
+	to {
+		filter: hue-rotate(360deg);
+	}
 }
 
 @keyframes colour-1 {
-  0% {
-    top: 0vh;
-    left: 50vw;
-  }
-  25% {
-    left: 0vw;
-  }
-  50% {
-    top: 100vh;
-  }
-  75% {
-    left: 100vw;
-  }
-  100% {
-    top: 0vh;
-    left: 50vw;
-  }
+	0% {
+		top: 0vh;
+		left: 50vw;
+	}
+	25% {
+		left: 0vw;
+	}
+	50% {
+		top: 100vh;
+	}
+	75% {
+		left: 100vw;
+	}
+	100% {
+		top: 0vh;
+		left: 50vw;
+	}
 }
 
 @keyframes colour-2 {
-  0% {
-    top: 50vh;
-    left: 100vw;
-  }
-  25% {
-    top: 100vh;
-  }
-  50% {
-    left: 0vw;
-  }
-  75% {
-    top: 0vh;
-  }
-  100% {
-    top: 50vh;
-    left: 100vw;
-  }
+	0% {
+		top: 50vh;
+		left: 100vw;
+	}
+	25% {
+		top: 100vh;
+	}
+	50% {
+		left: 0vw;
+	}
+	75% {
+		top: 0vh;
+	}
+	100% {
+		top: 50vh;
+		left: 100vw;
+	}
 }
 
 @keyframes colour-3 {
-  0% {
-    top: 100vh;
-    left: 50vw;
-  }
-  25% {
-    left: 100vw;
-  }
-  50% {
-    top: 0vh;
-  }
-  75% {
-    left: 0vw;
-  }
-  100% {
-    top: 100vh;
-    left: 50vw;
-  }
+	0% {
+		top: 100vh;
+		left: 50vw;
+	}
+	25% {
+		left: 100vw;
+	}
+	50% {
+		top: 0vh;
+	}
+	75% {
+		left: 0vw;
+	}
+	100% {
+		top: 100vh;
+		left: 50vw;
+	}
 }
 
 .one {
-  box-shadow: shadow(purple);
-  animation: hueRotate 10s 0s linear infinite, colour-1 19s 0s linear infinite;
+	box-shadow: shadow(purple);
+	animation:
+		hueRotate 10s 0s linear infinite,
+		colour-1 19s 0s linear infinite;
 }
 
 .two {
-  box-shadow: shadow(blue);
-  animation: hueRotate 15s 0s linear infinite, colour-2 25s 0s linear infinite;
+	box-shadow: shadow(blue);
+	animation:
+		hueRotate 15s 0s linear infinite,
+		colour-2 25s 0s linear infinite;
 }
 
 .three {
-  box-shadow: shadow(red);
-  animation: hueRotate 20s 0s linear infinite, colour-3 15s 0s linear infinite;
+	box-shadow: shadow(red);
+	animation:
+		hueRotate 20s 0s linear infinite,
+		colour-3 15s 0s linear infinite;
 }
 .four {
-  box-shadow: shadow(green);
-  animation: hueRotate 20s 0s linear infinite, colour-3 15s 0s linear infinite;
+	box-shadow: shadow(green);
+	animation:
+		hueRotate 20s 0s linear infinite,
+		colour-3 15s 0s linear infinite;
 }
 
 html {
-  scroll-behavior: smooth;
+	scroll-behavior: smooth;
 }
 
 html:before {
-  content: '';
-  justify-content: center;
-  position: fixed;
-  width: 100%;
-  height: 999px;
-  background-color: #0a192f;
-  z-index: -1;
+	content: "";
+	justify-content: center;
+	position: fixed;
+	width: 100%;
+	height: 999px;
+	background-color: #0a192f;
+	z-index: -1;
 }
 
 .main-body {
-  // background-color: $background-color;
-  margin: 0px;
-  background-color: #fff;
+	// background-color: $background-color;
+	margin: 0px;
+	background-color: #fff;
 }
 
 ::-webkit-scrollbar {
-  position: absolute;
-  height: 0px;
-  width: 0; /* Remove scrollbar space */
-  display: none; /* Optional: just make scrollbar invisible */
+	position: absolute;
+	height: 0px;
+	width: 0; /* Remove scrollbar space */
+	display: none; /* Optional: just make scrollbar invisible */
 }
 
 header {
-  .wrapper {
-    width: 100vw;
-    position: relative;
-    display: block;
-    overflow-y: visible;
-    background-color: $banner-background-color;
-    
+	.wrapper {
+		width: 100vw;
+		position: relative;
+		display: block;
+		overflow-y: visible;
+		background-color: $banner-background-color;
 
-    .rotated-wrapper {
-      overflow: hidden;
-      // overflow-y: visible;
-      display: block;
-      position: relative;
-      height: $banner-height;
-      margin-bottom: -8vh;
-    }
+		.rotated-wrapper {
+			overflow: hidden;
+			// overflow-y: visible;
+			display: block;
+			position: relative;
+			height: $banner-height;
+			margin-bottom: -8vh;
+		}
 
-    .diagonal-mask{
-    height: 100%;
-    position: absolute;
-    top:0;
-    width: 100%;
-    background: linear-gradient(to bottom left, transparent 50%, white 50%);
-    }
-  }
+		.diagonal-mask {
+			height: 100%;
+			position: absolute;
+			top: 0;
+			width: 100%;
+			background: linear-gradient(to bottom left, transparent 50%, white 50%);
+		}
+	}
 
-  .base {
-    position: absolute;
-    filter: blur(50px);
-    opacity: 0.6;
-  }
+	.base {
+		position: absolute;
+		filter: blur(50px);
+		opacity: 0.6;
+	}
 
-  @keyframes fly {
-    0% {
-      transform: rotate(1turn);
-      background-color: $aur-2;
-    }
-    50% {
-      transform: rotate(0);
-      background-color: $aur-3;
-    }
-    100% {
-      transform: rotate(1turn);
-      background-color: $aur-4;
-    }
-  }
+	@keyframes fly {
+		0% {
+			transform: rotate(1turn);
+			background-color: $aur-2;
+		}
+		50% {
+			transform: rotate(0);
+			background-color: $aur-3;
+		}
+		100% {
+			transform: rotate(1turn);
+			background-color: $aur-4;
+		}
+	}
 
-  .title-container {
-    .intro-title {
-      font-family: inter;
-      font-weight: 600;
-      color: #fff;
-      font-size: 40px;
-      mix-blend-mode: difference;
-      
-    }
-    position: absolute;
-    top: 40px;
-    right: 40px;
-    text-align: right;    
-  }
+	.title-container {
+		.intro-title {
+			font-family: inter;
+			font-weight: 600;
+			color: #fff;
+			font-size: 40px;
+			mix-blend-mode: difference;
+		}
+		position: absolute;
+		top: 40px;
+		right: 40px;
+		text-align: right;
+	}
 }
 //title mixin
 @mixin title-classes($title-font-offset) {
-  // Generate the classes by iterating through the array
-  //  $i becomes the index, which we will interpolate for
-  //  the class name and the index for each function call
-  @for $i from 0 through 10 {
-    .dt#{$i} {
-      height: 50px;
-      top: $title-font-offset * $i;
-      bottom: 200-$i * $title-font-offset;
-    }
-  }
+	// Generate the classes by iterating through the array
+	//  $i becomes the index, which we will interpolate for
+	//  the class name and the index for each function call
+	@for $i from 0 through 10 {
+		.dt#{$i} {
+			height: 50px;
+			top: $title-font-offset * $i;
+			bottom: 200-$i * $title-font-offset;
+		}
+	}
 }
 
-.contain-paint{
-  contain:paint;
+.contain-paint {
+	contain: paint;
 }
 
 body {
-  .projects-container {
-    // width: 100%;
-    display: flex;
-    flex-direction: column;
-    z-index: 1;
-  }
-  a {
-    text-decoration: none;
-    color: $main-text-color;
-  }
-  // :hover {
-  //   text-decoration: none;
-  // }
-  h3 {
-    margin-bottom: 10px;
-    margin-top: 0px;
-    font-size: 1.4em;
-    font-weight: 400;
-    font-family: "inter";
-  }
+	.projects-container {
+		// width: 100%;
+		display: flex;
+		flex-direction: column;
+		z-index: 1;
+	}
+	a {
+		text-decoration: none;
+		color: $main-text-color;
+	}
+	// :hover {
+	//   text-decoration: none;
+	// }
+	h3 {
+		margin-bottom: 10px;
+		margin-top: 0px;
+		font-size: 1.4em;
+		font-weight: 400;
+		font-family: "inter";
+	}
 
-  p {
-    font-weight: 200;
-    font-size: 1em;
-    line-height: 1.5em;
-    font-family: "inter";
-  }
-  .inline-block {
-    display: inline-block;
-  }
-  .dynamicTitle {
-    font-family: inter;
-    font-weight: 700;
-    color: $main-text-color;
-    font-size: $title-font-size;
-    width: fit-content;
-    margin-left: 50px;
-    z-index: 1;
-    transition: text-shadow 0.2s linear;
-    a:after {
-      content: "";
-      position: absolute;
-      width: 100%;
-      transform: scaleX(0);
-      height: 2px;
-      bottom: 10px;
-      left: 0px;
-      background-color: hsl(200, 100%, 40%);
-      transform-origin: bottom right;
-      transition: transform 0.25s ease-out;
-    }
-  }
-  .dynamicTitle.hover {
-    a {
-      // color: $highlight-color;
-      transition: color .5s, font-size .5s;
-      // transform: scaleX(.5);
-      width: 100%;
-      font-size: 30px;
-    }
-    :after {
-      transform: scaleX(1) translateY(5px);
-      transform-origin: bottom left;
-    }
+	p {
+		font-weight: 200;
+		font-size: 1em;
+		line-height: 1.5em;
+		font-family: "inter";
+	}
+	.inline-block {
+		display: inline-block;
+	}
+	.dynamicTitle {
+		font-family: inter;
+		font-weight: 700;
+		color: $main-text-color;
+		font-size: $title-font-size;
+		width: fit-content;
+		margin-left: 50px;
+		z-index: 1;
+		transition: text-shadow 0.2s linear;
+		a:after {
+			content: "";
+			position: absolute;
+			width: 100%;
+			transform: scaleX(0);
+			height: 2px;
+			bottom: 10px;
+			left: 0px;
+			background-color: hsl(200, 100%, 40%);
+			transform-origin: bottom right;
+			transition: transform 0.25s ease-out;
+		}
+	}
+	.dynamicTitle.hover {
+		a {
+			// color: $highlight-color;
+			transition:
+				color 0.5s,
+				font-size 0.5s;
+			// transform: scaleX(.5);
+			width: 100%;
+			font-size: 30px;
+		}
+		:after {
+			transform: scaleX(1) translateY(5px);
+			transform-origin: bottom left;
+		}
+	}
 
-  }
+	.dynamicTitle:hover {
+		text-shadow: 0px 1px 2px gray;
+	}
 
-  .dynamicTitle:hover{
-    text-shadow: 0px 1px 2px gray;
-  }
-  
+	.carousel-container {
+		scroll-behavior: smooth;
+		// overflow-x: scroll;
+		overflow-y: scroll;
+		-webkit-overflow-scrolling: touch;
+		transition: 0.4s;
+		margin: 0px;
+		padding: 0px;
+		height: 215px !important;
+		padding-top: 15px;
+	}
+	.carousel-container.hover {
+		transition: 2s;
+		width: 230px;
+	}
 
-  .carousel-container {
-    scroll-behavior: smooth;
-    // overflow-x: scroll;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-    transition: 0.4s;
-    margin: 0px;
-    padding: 0px;
-    height: 215px !important;
-    padding-top: 15px;
-  }
-  .carousel-container.hover {
-    transition: 2s;
-    width: 230px;
-  }
+	.imc {
+		display: flex;
+		flex-direction: row;
+		gap: 10px;
+		width: 800px;
+		height: 200px;
+	}
 
-  .imc {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    width: 800px;
-    height: 200px;
-  }
+	$breakpoint-tablet: 768px;
+	// desktop specific styles
+	@media (min-width: $breakpoint-tablet) {
+		// fonts
+		$title-font-size: 1.5rem;
+		$title-font-offset: $title-font-size;
+		// Output the mixin's classes
+		@include title-classes($title-font-offset: 50px); // the magic that makes the font stick to the bottom/top
+	}
+	//tablet and smaller styles
+	@media (max-width: $breakpoint-tablet) {
+		$title-font-offset: 30px !important;
+		$title-font-size: 14px !important;
 
-$breakpoint-tablet: 768px;
-// desktop specific styles
-@media (min-width: $breakpoint-tablet) {
-  // fonts
-  $title-font-size: 1.5rem;
-  $title-font-offset: $title-font-size;
-  // Output the mixin's classes
-  @include title-classes($title-font-offset: 50px); // the magic that makes the font stick to the bottom/top
+		//title mixin
+		// Output the mixin's classes
+		// @include title-classes($title-font-offset: 30px); // the magic that makes the font stick to the bottom/top
+
+		.dynamicTitle {
+			font-size: $title-font-size;
+			background-color: white;
+			margin-left: 5px !important;
+			position: relative;
+		}
+
+		.project-card-border {
+			width: 100%;
+			height: auto !important;
+			margin-right: auto !important;
+		}
+
+		.title-container {
+			.intro-title {
+				font-family: inter;
+				font-weight: 800;
+				font-size: 30px;
+			}
+		}
+	}
 }
-//tablet and smaller styles
-@media (max-width: $breakpoint-tablet) {
-  $title-font-offset: 30px !important;
-  $title-font-size: 14px !important;
-  
-  //title mixin
-  // Output the mixin's classes
-  // @include title-classes($title-font-offset: 30px); // the magic that makes the font stick to the bottom/top
-
-  .dynamicTitle {
-    font-size: $title-font-size;
-    background-color: white;
-    margin-left:5px !important;
-    position: relative;
-    
-  }
-
-
-
-  .project-card-border {
-    width: 100%;
-    height: auto !important;
-    margin-right: auto !important;
-  }
-
-  .title-container {
-    .intro-title {
-      font-family: inter;
-      font-weight: 800;
-      font-size: 30px;
-    }
-  }
-}}
