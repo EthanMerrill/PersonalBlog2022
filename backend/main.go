@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"math"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,11 +29,20 @@ type Config struct {
 	OpenAIKey      string
 	FirebaseKey    string
 	// Add more API keys as needed
+
+	// Rate limiting for the unauthenticated /auth endpoint and the JWT-protected
+	// /api routes. Because the client credentials are public, these limits are
+	// the only thing capping how fast a leaked credential can be abused.
+	RateLimitPerMinute       int
+	RateLimitBurst           int
+	RateLimitGlobalPerMinute int
 }
 
 // SecretService handles secret operations
 type SecretService struct {
-	config *Config
+	config        *Config
+	ipLimiter     *internal.RateLimiter
+	globalLimiter *internal.RateLimiter
 }
 
 // Claims for JWT
@@ -76,6 +88,10 @@ func main() {
 		AuthPassword:   getEnv("VITE_SECRETS_SERVICE_PASSWORD", "changeme"),
 		OpenAIKey:      getEnv("OPENAI_API_KEY", ""),
 		FirebaseKey:    getEnv("FIREBASE_API_KEY", ""),
+
+		RateLimitPerMinute:       getEnvInt("RATE_LIMIT_PER_MINUTE", 30),
+		RateLimitBurst:           getEnvInt("RATE_LIMIT_BURST", 10),
+		RateLimitGlobalPerMinute: getEnvInt("RATE_LIMIT_GLOBAL_PER_MINUTE", 120),
 	}
 
 	// Log configuration (without sensitive data)
@@ -86,6 +102,8 @@ func main() {
 	log.Printf("  JWT Secret configured: %t", config.JWTSecret != "")
 	log.Printf("  OpenAI Key configured: %t", config.OpenAIKey != "")
 	log.Printf("  Firebase Key configured: %t", config.FirebaseKey != "")
+	log.Printf("  Rate limit: %d/min per IP (burst %d), %d/min global",
+		config.RateLimitPerMinute, config.RateLimitBurst, config.RateLimitGlobalPerMinute)
 
 	// Validate required environment variables
 	if config.JWTSecret == "your-jwt-secret-change-this" {
@@ -100,6 +118,10 @@ func main() {
 
 	service := &SecretService{
 		config: config,
+		ipLimiter: internal.NewRateLimiter(
+			config.RateLimitPerMinute, time.Minute, config.RateLimitBurst),
+		globalLimiter: internal.NewRateLimiter(
+			config.RateLimitGlobalPerMinute, time.Minute, config.RateLimitGlobalPerMinute),
 	}
 
 	// Initialize ChatService
@@ -115,17 +137,20 @@ func main() {
 	router.HandleFunc("/health", service.healthHandler).Methods("GET")
 	log.Println("Registered route: GET /health")
 
-	// Authentication endpoint
-	router.HandleFunc("/auth", service.authHandler).Methods("POST")
-	log.Println("Registered route: POST /auth")
+	// Authentication endpoint. Rate limited because the credentials required here
+	// are shipped in the public frontend bundle.
+	router.Handle("/auth", service.rateLimitMiddleware(http.HandlerFunc(service.authHandler))).Methods("POST")
+	log.Println("Registered route: POST /auth (rate limited)")
 
-	// Protected secret endpoints
+	// Protected secret endpoints. The limiter runs before the JWT check so
+	// unauthenticated floods are rejected cheaply.
 	apiRouter := router.PathPrefix("/api").Subrouter()
+	apiRouter.Use(service.rateLimitMiddleware)
 	apiRouter.Use(service.jwtMiddleware)
 	apiRouter.HandleFunc("/secrets/openai", service.getOpenAIKeyHandler).Methods("GET")
 	apiRouter.HandleFunc("/secrets/{secretName}", service.getSecretHandler).Methods("GET")
 	apiRouter.HandleFunc("/chat", chatService.ChatHandler).Methods("POST")
-	log.Println("Registered protected routes: GET /api/secrets/openai, GET /api/secrets/{secretName}, POST /api/chat")
+	log.Println("Registered protected routes: GET /api/secrets/openai, GET /api/secrets/{secretName}, POST /api/chat (rate limited)")
 
 	// Setup CORS
 	// Parse comma-separated allowed origins
@@ -321,9 +346,82 @@ func (s *SecretService) getSecretHandler(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(SecretResponse{Secret: secret})
 }
 
+// rateLimitMiddleware applies the per-IP and global limiters to a handler.
+func (s *SecretService) rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := clientIP(r)
+
+		if ok, retryAfter := s.ipLimiter.Allow(ip); !ok {
+			s.writeRateLimited(w, r, retryAfter)
+			return
+		}
+		if ok, retryAfter := s.globalLimiter.Allow("global"); !ok {
+			s.writeRateLimited(w, r, retryAfter)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// writeRateLimited responds with 429 and a Retry-After hint.
+func (s *SecretService) writeRateLimited(w http.ResponseWriter, r *http.Request, retryAfter time.Duration) {
+	seconds := int(math.Ceil(retryAfter.Seconds()))
+	if seconds < 1 {
+		seconds = 1
+	}
+
+	log.Printf("Rate limit exceeded: %s %s from %s (retry after %ds)", r.Method, r.URL.Path, clientIP(r), seconds)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", strconv.Itoa(seconds))
+	w.WriteHeader(http.StatusTooManyRequests)
+	json.NewEncoder(w).Encode(map[string]string{"error": "rate limit exceeded"})
+}
+
+// clientIP returns the caller's address. The service is only reachable through
+// the Cloudflare tunnel, which sets CF-Connecting-IP and appends to
+// X-Forwarded-For. If the origin port is ever exposed directly, these headers
+// become spoofable and limits could be bypassed by rotating values.
+func clientIP(r *http.Request) string {
+	if ip := strings.TrimSpace(r.Header.Get("CF-Connecting-IP")); ip != "" {
+		return ip
+	}
+
+	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwarded != "" {
+		first := forwarded
+		if i := strings.IndexByte(first, ','); i >= 0 {
+			first = first[:i]
+		}
+		if first = strings.TrimSpace(first); first != "" {
+			return first
+		}
+	}
+
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
+}
+
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
 	return defaultValue
+}
+
+// getEnvInt parses an integer environment variable, falling back to the default
+// when unset or invalid.
+func getEnvInt(key string, defaultValue int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return defaultValue
+	}
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed <= 0 {
+		log.Printf("Invalid value for %s (%q), using default %d", key, raw, defaultValue)
+		return defaultValue
+	}
+	return parsed
 }
