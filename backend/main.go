@@ -23,6 +23,7 @@ type Config struct {
 	Port           string
 	AllowedOrigins string
 	OpenAIKey      string
+	OpenAIModel    string
 
 	// Rate limiting for the public /api/chat endpoint. The service is reachable
 	// by anyone through the Cloudflare tunnel, so these limits are what caps
@@ -55,6 +56,7 @@ func main() {
 		Port:           getEnv("PORT", "8080"),
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "https://ethanmerrill.com"),
 		OpenAIKey:      getEnv("OPENAI_API_KEY", ""),
+		OpenAIModel:    getEnv("OPENAI_MODEL", "gpt-4o-mini"),
 
 		RateLimitPerMinute:       getEnvInt("RATE_LIMIT_PER_MINUTE", 30),
 		RateLimitBurst:           getEnvInt("RATE_LIMIT_BURST", 10),
@@ -66,6 +68,7 @@ func main() {
 	log.Printf("  Port: %s", config.Port)
 
 	log.Printf("  OpenAI Key configured: %t", config.OpenAIKey != "")
+	log.Printf("  OpenAI Model: %s", config.OpenAIModel)
 	log.Printf("  Rate limit: %d/min per IP (burst %d), %d/min global",
 		config.RateLimitPerMinute, config.RateLimitBurst, config.RateLimitGlobalPerMinute)
 
@@ -85,7 +88,7 @@ func main() {
 	}
 
 	// Initialize ChatService
-	chatService := internal.NewChatService(config.OpenAIKey)
+	chatService := internal.NewChatService(config.OpenAIKey, config.OpenAIModel)
 
 	// Setup routes
 	router := mux.NewRouter()

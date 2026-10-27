@@ -20,14 +20,22 @@ type ChatResponse struct {
 
 type ChatConfig struct {
 	OpenAIKey string
+	Model     string
 }
+
+// defaultModel is used when no model is configured. gpt-3.5-turbo is deprecated
+// and now returns model_not_found from the OpenAI API.
+const defaultModel = "gpt-4o-mini"
 
 type ChatService struct {
 	Config *ChatConfig
 }
 
-func NewChatService(openAIKey string) *ChatService {
-	return &ChatService{Config: &ChatConfig{OpenAIKey: openAIKey}}
+func NewChatService(openAIKey, model string) *ChatService {
+	if model == "" {
+		model = defaultModel
+	}
+	return &ChatService{Config: &ChatConfig{OpenAIKey: openAIKey, Model: model}}
 }
 
 // ChatHandler handles chat requests and proxies to OpenAI
@@ -55,7 +63,7 @@ func (s *ChatService) ChatHandler(w http.ResponseWriter, r *http.Request) {
 	importedPrompt := WorkHistoryPrompt + "\n\nYou are Ethan's AI assistant on his portfolio website. Be helpful, professional, and represent Ethan well. Keep responses concise and engaging. Reference the work history above if relevant."
 
 	openaiReq := map[string]interface{}{
-		"model": "gpt-3.5-turbo",
+		"model": s.Config.Model,
 		"messages": []map[string]string{
 			{"role": "system", "content": importedPrompt},
 			{"role": "user", "content": req.Message},
