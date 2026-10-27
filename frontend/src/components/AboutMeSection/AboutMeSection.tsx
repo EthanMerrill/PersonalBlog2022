@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState, useCallback, useMemo} from "react";
 import ChatMessage, {ChatMessageProps} from "../ChatMessage/ChatMessage";
-import {secretsService} from "../../services/secretsService";
+import {healthCheck, sendChatMessage} from "../../services/chatService";
 
 interface AboutMeSectionProps {
 	width?: number;
@@ -8,16 +8,8 @@ interface AboutMeSectionProps {
 }
 
 const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
-	const [isSecretsServiceReady, setIsSecretsServiceReady] = useState(false);
+	const [isChatServiceReady, setIsChatServiceReady] = useState(false);
 	const [isProcessingAI, setIsProcessingAI] = useState(false);
-	const authCredentials = useMemo(
-		() => ({
-			username: process.env.NEXT_PUBLIC_SECRETS_SERVICE_USERNAME || "NEXT_PUBLIC_SECRETS_SERVICE_USERNAME not set!",
-			password: process.env.NEXT_PUBLIC_SECRETS_SERVICE_PASSWORD || "NEXT_PUBLIC_SECRETS_SERVICE_PASSWORD not set!",
-		}),
-		[],
-	);
-
 	// Memoize initial messages to prevent recreation on each render
 	const initialMessages: ChatMessageProps[] = useMemo(
 		() => [
@@ -35,96 +27,38 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 	const [completed, setCompleted] = useState(true);
 	const chatContainerRef = useRef<HTMLDivElement>(null);
 
-	// 1. Secrets service initialization - runs ONLY once on mount
+	// 1. Chat service initialization - runs once on mount
 	useEffect(() => {
 		let isMounted = true; // Cleanup flag
 
 		const initializeService = async () => {
-			try {
-				console.log("Initializing secrets service...");
+			const isHealthy = await healthCheck();
+			if (!isMounted) return;
 
-				// Check if service is healthy
-				const isHealthy = await secretsService.healthCheck();
-				if (!isHealthy || !isMounted) {
-					console.warn("Secrets service is not available");
-					return;
-				}
-
-				const token = await secretsService.getValidToken(authCredentials);
-				if (!token || !isMounted) {
-					console.error("Failed to authenticate with secrets service");
-					return;
-				}
-
-				if (isMounted) {
-					setIsSecretsServiceReady(true);
-					console.log("Secrets service ready!");
-				}
-			} catch (error) {
-				console.error("Failed to initialize secrets service:", error);
+			if (!isHealthy) {
+				console.warn("Chat service is not available");
+				return;
 			}
+
+			setIsChatServiceReady(true);
 		};
 
 		initializeService();
 
-		// Cleanup function
 		return () => {
 			isMounted = false;
 		};
-	}, [authCredentials]); // Empty dependency array behavior via memoized authCredentials
+	}, []);
 
 	// 2. AI response function - memoized to prevent recreation
-	const getAIResponse = useCallback(
-		async (message: string): Promise<string> => {
-			try {
-				const sendChatRequest = async (token: string | null): Promise<Response> =>
-					fetch(process.env.NEXT_PUBLIC_SECRETS_SERVICE_URL + "/api/chat", {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							...(token ? {Authorization: `Bearer ${token}`} : {}),
-						},
-						body: JSON.stringify({message}),
-					});
-
-				let token = await secretsService.getValidToken(authCredentials);
-				let response = await sendChatRequest(token);
-
-				if (response.status === 401) {
-					secretsService.clearToken();
-					token = await secretsService.getValidToken(authCredentials);
-					response = await sendChatRequest(token);
-				}
-
-				if (!response.ok) {
-					let backendError = `Backend chat API error: ${response.status}`;
-					try {
-						const errorData = await response.json();
-						if (errorData?.error && typeof errorData.error === "string") {
-							backendError = errorData.error;
-						}
-					} catch {
-						// Ignore parse failures and keep fallback error message
-					}
-
-					throw new Error(backendError);
-				}
-
-				const data = await response.json();
-				if (data.response) {
-					return data.response;
-				} else if (data.error) {
-					throw new Error(data.error);
-				} else {
-					return "Sorry, I couldn't process that request.";
-				}
-			} catch (error) {
-				console.error("AI response error:", error);
-				throw error;
-			}
-		},
-		[authCredentials],
-	); // Depends on auth credentials
+	const getAIResponse = useCallback(async (message: string): Promise<string> => {
+		try {
+			return await sendChatMessage(message);
+		} catch (error) {
+			console.error("AI response error:", error);
+			throw error;
+		}
+	}, []);
 
 	// 3. Enhanced submit handler with AI integration
 	const handleSubmit = useCallback(async () => {
@@ -142,8 +76,8 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 		setInput("");
 		setIsProcessingAI(true);
 
-		// Only attempt AI response if secrets service is ready
-		if (isSecretsServiceReady) {
+		// Only attempt an AI response if the chat service is available
+		if (isChatServiceReady) {
 			try {
 				const aiResponse = await getAIResponse(currentInput);
 
@@ -168,7 +102,7 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 				setChatMessages((prev) => [...prev, errorMessage]);
 			}
 		} else {
-			// Fallback when secrets service isn't available
+			// Fallback when the chat service isn't available
 			const fallbackMessage: ChatMessageProps = {
 				message: "Thanks for your message! The AI assistant is currently offline, but feel free to contact me directly.",
 				timestamp: Date.now(),
@@ -180,7 +114,7 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 		}
 
 		setIsProcessingAI(false);
-	}, [input, isSecretsServiceReady, getAIResponse]);
+	}, [input, isChatServiceReady, getAIResponse]);
 
 	// 4. Auto-scroll effect - optimized
 	useEffect(() => {
@@ -213,7 +147,6 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 	}, [messageQueue.length, completed]); // Only depend on length and completed status
 
 	// Remove the console.log that calls getOpenAIKey() on every render
-	// console.log("AI KEY: ", secretsService.getOpenAIKey()) // This was causing issues
 
 	return (
 		<div className="flex flex-col h-96 mb-10 mx-auto px-10 max-w-6xl">
@@ -239,7 +172,7 @@ const AboutMeSection: React.FC<AboutMeSectionProps> = () => {
 						{isProcessingAI ? "Thinking..." : "Send"}
 					</button>
 				</div>
-				{!isSecretsServiceReady && <div className="text-sm text-amber-600 mt-1">⚠️ AI assistant offline - messages will receive static responses</div>}
+				{!isChatServiceReady && <div className="text-sm text-amber-600 mt-1">⚠️ AI assistant offline - messages will receive static responses</div>}
 			</div>
 		</div>
 	);
