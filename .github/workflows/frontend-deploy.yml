@@ -49,16 +49,16 @@ jobs:
         run: npm test
 
       - name: Build application
+        # No credentials or API keys are passed to the build: every
+        # NEXT_PUBLIC_* value is inlined into the public bundle.
         env:
-          VITE_SECRETS_SERVICE_URL: ${{ secrets.VITE_SECRETS_SERVICE_URL }}
-          VITE_SECRETS_SERVICE_PASSWORD: ${{ secrets.VITE_SECRETS_SERVICE_PASSWORD }}
-          VITE_SECRETS_SERVICE_USERNAME: ${{ secrets.VITE_SECRETS_SERVICE_USERNAME }}
+          NEXT_PUBLIC_SECRETS_SERVICE_URL: ${{ vars.NEXT_PUBLIC_SECRETS_SERVICE_URL || 'https://portfolio.merrill-api.com' }}
         run: npm run build
 
       - name: Upload build artifacts
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./frontend/dist
+          path: ./frontend/out
 
   deploy:
     name: Deploy to GitHub Pages
