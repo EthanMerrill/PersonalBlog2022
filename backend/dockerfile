@@ -1,41 +1,35 @@
-# Use the official Go image as the base image
-FROM golang:1.21-alpine AS builder
+# Build stage: pinned to the same Go release as the `go` directive in go.mod
+FROM golang:1.27.4-alpine AS builder
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Install necessary packages
-RUN apk add --no-cache git ca-certificates
+# Never fetch a different toolchain than the one pinned above
+ENV GOTOOLCHAIN=local
 
-# Copy go mod and sum files
+# Download dependencies first so this layer is cached across source changes
 COPY go.mod go.sum ./
-
-# Download all dependencies
 RUN go mod download
 
-# Copy the source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+# Static, stripped binary so it runs on the minimal runtime image below
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/main .
 
-# Start a new stage from scratch
-FROM alpine:latest
+# Runtime stage: pinned Alpine. Kept (not distroless) because the compose
+# healthcheck uses wget, which this image provides.
+FROM alpine:3.24.4
 
-# Install ca-certificates for HTTPS requests and wget for health checks
-RUN apk --no-cache add ca-certificates wget
+# ca-certificates for outbound HTTPS to the OpenAI API; wget for healthchecks
+RUN apk --no-cache add ca-certificates wget \
+    && addgroup -S -g 10001 app \
+    && adduser -S -D -H -u 10001 -G app app
 
-# Set the working directory
-WORKDIR /root/
+WORKDIR /app
 
-# Copy the binary from the builder stage
-COPY --from=builder /app/main .
+COPY --from=builder /out/main /app/main
 
-# Copy environment file template
-COPY --from=builder /app/.env.example .
-
-# Expose port 8080
 EXPOSE 8080
 
-# Command to run the executable
-CMD ["./main"]
+USER 10001:10001
+
+CMD ["/app/main"]
