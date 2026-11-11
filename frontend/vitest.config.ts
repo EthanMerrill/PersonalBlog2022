@@ -10,8 +10,8 @@ export default defineConfig({
 	},
 	// Match Next's automatic JSX runtime so components without an explicit
 	// `import React` (e.g. the icon components) render under test.
-	esbuild: {
-		jsx: "automatic",
+	oxc: {
+		jsx: {runtime: "automatic"},
 	},
 	resolve: {
 		alias: {
