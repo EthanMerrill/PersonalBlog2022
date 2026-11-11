@@ -27,16 +27,24 @@ const FIELDS = [
   "ext_link", "repo_link", "image_alt", "tech", "published", "sort_weight",
 ];
 
-const KNOWN_FLAGS = new Set(["--dry-run", "--force-images"]);
+const KNOWN_FLAGS = new Set(["--dry-run", "--update", "--force-images"]);
 const args = process.argv.slice(2);
 const unknownArgs = args.filter((a) => !KNOWN_FLAGS.has(a));
 if (unknownArgs.length) {
   console.error(`error: unknown argument(s): ${unknownArgs.join(", ")}`);
-  console.error("usage: seed.mjs [--dry-run] [--force-images]");
+  console.error("usage: seed.mjs [--dry-run] [--update [--force-images]]");
   process.exit(1);
 }
 const DRY_RUN = args.includes("--dry-run");
+// Default is create-only: records that already exist are left alone, so edits
+// made in the PocketBase admin UI (e.g. end dates) survive a re-run.
+// --update overwrites existing records from items.json.
+const UPDATE = args.includes("--update");
 const FORCE_IMAGES = args.includes("--force-images");
+if (FORCE_IMAGES && !UPDATE) {
+  console.error("error: --force-images only applies with --update");
+  process.exit(1);
+}
 
 // ---------- validation (runs for every mode, before any network call) ----------
 
@@ -220,7 +228,7 @@ async function runDryRun(items) {
       `  [${String(i + 1).padStart(2)}] ${item.kind.padEnd(10)} ${item.legacy_id}  "${item.title}"  ` +
         `published=${item.published}  ${imgNote}`,
     );
-    console.log(`       -> create if legacy_id is missing, otherwise update in place`);
+    console.log(`       -> create if legacy_id is missing, otherwise ${UPDATE ? "overwrite in place" : "skip"}`);
   }
   const withImages = items.filter((it) => it.image);
   console.log(`images referenced: ${withImages.length}, all present and within 5MB`);
@@ -242,6 +250,7 @@ async function runSeed(items) {
   const failures = [];
   let created = 0;
   let updated = 0;
+  let skipped = 0;
   for (const item of items) {
     const label = `${item.legacy_id} "${item.title}"`;
     try {
@@ -254,6 +263,9 @@ async function runSeed(items) {
         await call("POST", `/api/collections/${COLLECTION}/records`, payload);
         created++;
         console.log(`created  ${label}${item.image ? " (image uploaded)" : ""}`);
+      } else if (!UPDATE) {
+        skipped++;
+        console.log(`skipped  ${label} (exists; pass --update to overwrite)`);
       } else {
         const upload = FORCE_IMAGES && item.image;
         const payload = upload
@@ -269,7 +281,7 @@ async function runSeed(items) {
     }
   }
 
-  console.log(`done: ${created} created, ${updated} updated, ${failures.length} failed`);
+  console.log(`done: ${created} created, ${updated} updated, ${skipped} skipped, ${failures.length} failed`);
   if (failures.length) {
     throw new Error(`${failures.length} item(s) failed: ${failures.join("; ")}`);
   }

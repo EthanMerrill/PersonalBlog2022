@@ -35,7 +35,6 @@ const ChatWidget: React.FC = () => {
 	useEffect(() => {
 		if (!hasOpened) return;
 		let isMounted = true;
-		setMessageQueue(INTRO_MESSAGES.map(makeAssistantMessage));
 		(async () => {
 			const healthy = await healthCheck();
 			if (!isMounted) return;
@@ -72,6 +71,9 @@ const ChatWidget: React.FC = () => {
 	}, [isOpen]);
 
 	const open = () => {
+		// Queue the intro in the event handler rather than an effect, so the
+		// first open is a single render pass.
+		if (!hasOpened) setMessageQueue(INTRO_MESSAGES.map(makeAssistantMessage));
 		setHasOpened(true);
 		setIsOpen(true);
 	};
@@ -138,7 +140,7 @@ const ChatWidget: React.FC = () => {
 			{hasOpened && (
 				<div id={PANEL_ID} role="dialog" aria-label={LABEL} hidden={!isOpen} className={`chat-widget-panel pointer-events-auto mb-3 ${isOpen ? "flex" : "hidden"} flex-col bg-white shadow-xl border border-gray-200 rounded-lg w-[360px] h-[480px] max-h-[calc(100vh-6rem)] sm:w-full sm:mb-0 sm:h-[70vh] sm:max-h-none sm:rounded-b-none`}>
 					<div className="flex items-center justify-between px-3 py-2 bg-blue-accent text-white rounded-t-lg">
-						<span className="text-sm font-medium">Ethan's assistant</span>
+						<span className="text-sm font-medium">Ethan’s assistant</span>
 						<button type="button" onClick={close} aria-label="Close chat" className="px-2 text-lg leading-none">
 							&times;
 						</button>
@@ -148,7 +150,7 @@ const ChatWidget: React.FC = () => {
 						{chatMessages.map((m, i) => (
 							<ChatMessage key={`${m.timestamp}-${i}`} message={m.message} user={m.user} author={m.author} timestamp={m.timestamp} completed={setCompleted} />
 						))}
-						{isProcessingAI && <div className="text-gray-500 italic p-2 text-sm">Ethan's assistant is thinking...</div>}
+						{isProcessingAI && <div className="text-gray-500 italic p-2 text-sm">Ethan’s assistant is thinking...</div>}
 					</div>
 					<div className="p-3 border-t border-gray-200">
 						<div className="flex">

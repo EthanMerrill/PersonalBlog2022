@@ -32,7 +32,7 @@ export default function App({ items = [] }: { items?: TimelineItem[] }): React.R
             <div className='easter-egg absolute top-[-10px]'><p className=' z-10 relative text-white'>Hello again!</p></div>
             <div className="app z-10 relative">
                 <AppHeader />
-                <SocialLinks className='rotated-wrapper' />
+                <SocialLinks />
                 <div>
                     <div className="projects-container pt-30 z-10">
                         <Categorysection sectionNumber={1} title={'About Me'}>
@@ -46,7 +46,7 @@ export default function App({ items = [] }: { items?: TimelineItem[] }): React.R
                                 <div className='flex flex-wrap'>
                                     <div className='basis-2/3 sm:basis-full py-3 text-main-text-gray'>
                                         Everyone has ideas. The key is in the execution. To keep track and hold myself accountable, I keep a list of ideas for projects which I think would be interesting, fun, and maybe even profitable. Ideas are marked as <span className='inline rounded-full px-2 bg-notion-green'>Live</span>, <span className='inline rounded-full px-2 bg-notion-brown'>Abandoned</span>, or <span className='inline rounded-full px-2 bg-notion-gray'> Not Started</span>.
-                                        <br /> <br /> If you're interested in collaborating on any of these projects, please reach out!
+                                        <br /> <br /> If you’re interested in collaborating on any of these projects, please reach out!
                                     </div>
                                     <div className='basis-1/3 sm:basis-full my-auto'>
                                         <a href="https://observant-book-583.notion.site/0013220bce5a49c08a1c8b49b9983c94?v=1b7fd37991bc4c63a0295d05c47c2d94"><div className='hover:bg-blue-accent hover:text-white solid border-[1.5px] rounded border-white w-40 mx-auto my-auto text-main-text-gray text-center p-2'>View Ideas List →</div></a>

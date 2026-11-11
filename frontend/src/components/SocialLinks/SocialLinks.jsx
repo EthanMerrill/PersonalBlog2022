@@ -5,7 +5,7 @@ import IconLinkedin from "../Icons/IconLinkedin";
 import IconPrinter from "../Icons/IconPrinter";
 import { Tooltip } from "react-tooltip";
 
-const SocialLinks = ({ className }) => {
+const SocialLinks = () => {
     // JSX return
     return (<>
         <div className="fixed right-0 p-3 rounded-l-2xl bottom-24 social-links flex flex-col gap-7 justify-end font-sans text-lg z-10 border-0" >

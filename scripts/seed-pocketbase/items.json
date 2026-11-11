@@ -36,14 +36,17 @@
     "kind": "experience",
     "title": "Developer",
     "subtitle": "@CapTech for a Midsize Bank",
-    "blurb": "Created and implemented two software solutions to streamline commercial account maintenance and openings for a leading Financial Services Company listed in the Forbes Global 2000. These tools managed hundreds of requests within the initial two weeks of deployment, resulting in a notable 20% decrease in servicing time for core request types. These new tools also provided reporting on previously unmonitored KPIs which will facilitate continuous process improvement for sales and service teams.",
+    "blurb": "Designed, and developed two software solutions to systematize commercial account maintenance and openings for a leading Financial Services Company listed in the Forbes Global 2000 with 80 bn AUM. These tools allowed commercial bankers to make requests to the account servicing team such as modifying an account type or creating a new client account of a specific type such as a commercial checking or lending account.\n- Scale: Tools managed hundreds of requests within the initial two weeks of deployment and scaled to thousands of requests with over 2,000 users in the following year.\n- Reporting: Tools provided reporting on previously unknown KPIs such as the distribution of maintenance request types.\n- Result: New process and tools drove a 20% reduction in servicing time for core account maintenance request types.",
     "start_date": "2023-04-12",
     "end_date": null,
     "ext_link": null,
     "repo_link": null,
     "image": null,
     "image_alt": null,
-    "tech": [],
+    "tech": [
+      "PowerApps",
+      "PowerAutomate"
+    ],
     "published": true,
     "sort_weight": 0
   },
@@ -143,25 +146,6 @@
       "CloudWatch",
       "Amazon SNS",
       "Amazon SQS"
-    ],
-    "published": false,
-    "sort_weight": 0
-  },
-  {
-    "legacy_id": "new-commercial-banking-account-servicing-tool",
-    "kind": "experience",
-    "title": "Commercial Banking Account Servicing Tool",
-    "subtitle": "Senior Consultant at CapTech, Remote - Boston",
-    "blurb": "Designed, and developed two software solutions to systematize commercial account maintenance and openings for a leading Financial Services Company listed in the Forbes Global 2000 with 80 bn AUM. These tools allowed commercial bankers to make requests to the account servicing team such as modifying an account type or creating a new client account of a specific type such as a commercial checking or lending account.\n- Scale: Tools managed hundreds of requests within the initial two weeks of deployment and scaled to thousands of requests with over 2,000 users in the following year.\n- Reporting: Tools provided reporting on previously unknown KPIs such as the distribution of maintenance request types.\n- Result: New process and tools drove a 20% reduction in servicing time for core account maintenance request types.",
-    "start_date": "2023-02-01",
-    "end_date": "2024-02-01",
-    "ext_link": null,
-    "repo_link": null,
-    "image": null,
-    "image_alt": null,
-    "tech": [
-      "PowerApps",
-      "PowerAutomate"
     ],
     "published": false,
     "sort_weight": 0

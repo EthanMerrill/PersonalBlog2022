@@ -83,7 +83,7 @@ security:
 	@if command -v gosec > /dev/null; then \
 		gosec ./...; \
 	else \
-		echo "Install gosec: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"; \
+		echo "Install gosec: go install github.com/securego/gosec/v2/cmd/gosec@latest"; \
 	fi
 
 # Help

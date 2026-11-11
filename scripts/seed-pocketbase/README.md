@@ -1,14 +1,17 @@
 # Seeding the PocketBase timeline
 
 `seed.mjs` loads `items.json` (the portfolio timeline: experience and projects) and
-writes it to the `portfolio_timeline_items` collection on PocketBase. It is idempotent:
-each item is matched by `legacy_id`, created if missing, and updated in place if present.
+writes it to the `portfolio_timeline_items` collection on PocketBase. Each item is matched
+by `legacy_id`. By default the script is create-only: missing records are created and
+existing ones are skipped, so edits made later in the PocketBase admin UI are never
+overwritten by a re-run. Pass `--update` to overwrite existing records from `items.json`.
 
 Requires Node 22 or newer. No dependencies.
 
 ## Files
 
-- `items.json`: the source of truth. Edit this file to change what gets seeded.
+- `items.json`: the initial content. After the first seed, PocketBase is the source of
+  truth; edit records in the admin UI rather than here.
   Fields match the data contract (`kind`, `title`, `subtitle`, `blurb`, `start_date`,
   `end_date`, `ext_link`, `repo_link`, `image`, `image_alt`, `tech`, `published`,
   `sort_weight`, `legacy_id`). `image` is a filename in `images/` or `null`.
@@ -31,10 +34,12 @@ PB_SUPERUSER_PASSWORD='...' \
 node scripts/seed-pocketbase/seed.mjs
 ```
 
-Re-upload images for records that already exist:
+Overwrite existing records from `items.json` (discards admin-UI edits to those records),
+optionally re-uploading their images:
 
 ```sh
-node scripts/seed-pocketbase/seed.mjs --force-images
+node scripts/seed-pocketbase/seed.mjs --update
+node scripts/seed-pocketbase/seed.mjs --update --force-images
 ```
 
 Environment variables:
@@ -51,9 +56,9 @@ Environment variables:
   fails, nothing is written.
 - For each item, the script looks up `legacy_id`:
   - Missing: creates the record. The image is uploaded as multipart.
-  - Present: updates the record with JSON. The image is left alone unless `--force-images`
-    is passed, in which case it is re-uploaded.
-- Empty optional fields are cleared on update.
+  - Present: skipped, unless `--update` is passed. With `--update` the record is
+    overwritten with JSON (empty optional fields are cleared); the image is left alone
+    unless `--force-images` is also passed.
 - If any item fails, the script keeps going, prints each failure, and exits 1.
 
 ## Notes
