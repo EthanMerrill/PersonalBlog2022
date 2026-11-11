@@ -17,28 +17,16 @@ const CategorySection = (props: IcategorySection) => {
 
 	const myRef = useRef<HTMLDivElement>(null);
 
-	const observer = new IntersectionObserver((entries, observer) => {
-		const entry = entries[0];
-		if (entry.isIntersecting) {
-			setHover(true);
-		} else {
-			setHover(false);
-		}
-	});
-
 	useEffect(() => {
 		const currentRef = myRef.current;
-		if (currentRef) {
-			observer.observe(currentRef);
-		}
-
-		// Cleanup function to prevent memory leaks
-		return () => {
-			if (currentRef) {
-				observer.unobserve(currentRef);
-			}
-		};
-	}, [observer]);
+		if (!currentRef || typeof IntersectionObserver === "undefined") return;
+		// Created inside the effect so the component can be prerendered (no browser APIs during render)
+		const observer = new IntersectionObserver((entries) => {
+			setHover(entries[0].isIntersecting);
+		});
+		observer.observe(currentRef);
+		return () => observer.disconnect();
+	}, []);
 
 	return (
 		<>

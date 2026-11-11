@@ -1,0 +1,107 @@
+$bp: 700px;
+$gutter: 40px;
+$line: hsl(200, 100%, 40%);
+
+.timeline {
+	position: relative;
+	max-width: 64rem;
+	margin: 0 auto;
+	padding: 1.5rem 1rem;
+}
+
+.headers {
+	display: grid;
+	grid-template-columns: 1fr $gutter 1fr;
+	font-family: Oswald, sans-serif;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: hsla(0, 0%, 20%, 1);
+	opacity: 0.8;
+	h3 { margin: 0; }
+}
+.headerLeft { text-align: right; padding-right: 1rem; }
+.headerRight { text-align: left; padding-left: 1rem; }
+
+.list {
+	position: relative;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+
+	&::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 2px;
+		transform: translateX(-50%);
+		background: $line;
+		opacity: 0.6;
+	}
+}
+
+.item {
+	position: relative;
+	display: grid;
+	grid-template-columns: 1fr $gutter 1fr;
+	align-items: start;
+	padding: 0.75rem 0;
+}
+
+.colLeft { grid-column: 1; }
+.colRight { grid-column: 3; }
+.cardCell, .labelCell { grid-row: 1; min-width: 0; }
+.cardCell.colLeft { padding-right: 0.75rem; }
+.cardCell.colRight { padding-left: 0.75rem; }
+
+.dot {
+	grid-column: 2;
+	grid-row: 1;
+	justify-self: center;
+	margin-top: 1.5rem;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: white;
+	border: 3px solid $line;
+	position: relative;
+	z-index: 1;
+}
+
+.labelCell {
+	margin-top: 1.25rem;
+	font-size: 0.75rem;
+	color: hsla(0, 0%, 20%, 1);
+	opacity: 0.75;
+	&.colLeft { text-align: right; padding-right: 0.75rem; }
+	&.colRight { text-align: left; padding-left: 0.75rem; }
+}
+
+.image { aspect-ratio: 16 / 9; height: auto; }
+
+.tag, .cardDate { display: none; }
+
+@media (max-width: $bp) {
+	.headers { display: none; }
+	.list::before { left: 12px; }
+	.item { grid-template-columns: 24px 1fr; }
+	.dot { grid-column: 1; margin-top: 1.5rem; }
+	.cardCell.colLeft, .cardCell.colRight {
+		grid-column: 2;
+		padding: 0 0 0 0.75rem;
+	}
+	.labelCell { display: none; }
+	.cardDate { display: block; }
+	.tag {
+		display: inline-block;
+		font-size: 0.65rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		border-radius: 9999px;
+		padding: 0 0.5rem;
+		margin-bottom: 0.25rem;
+	}
+	.tagWork { background: #daecda; }
+	.tagProject { background: #f2e8d9; }
+}

@@ -1,19 +1,24 @@
+'use client';
+
 import './style/style.scss';
 import Categorysection from './components/CategorySection/CategorySection';
 import ProjectCardCorner from './components/ProjectCardCorner/ProjectCardCorner';
 // https://bestofreactjs.com/repo/rafrex-react-router-hash-link--react-router
 import AppHeader from './components/AppHeader/AppHeader';
 import React from 'react';
-import ItemsList from './components/ItemsList/ItemsList';
+import Timeline from './components/Timeline/Timeline';
+import type { TimelineItem } from './types/TimelineItem';
 import SocialLinks from './components/SocialLinks/SocialLinks';
 import AboutMeSection from './components/AboutMeSection/AboutMeSection';
 import ChatWidget from './components/ChatWidget/ChatWidget';
 
-export default function App(): React.ReactElement {
-    const [width, setWidth] = React.useState<number>(window.innerWidth);
+export default function App({ items = [] }: { items?: TimelineItem[] }): React.ReactElement {
+    // Start with a desktop width so server/prerender and first client render match; real width is read in the effect.
+    const [width, setWidth] = React.useState<number>(1024);
     const breakpoint: number = 700;
     React.useEffect(() => {
         const handleResizeWindow = (): void => setWidth(window.innerWidth);
+        handleResizeWindow();
         // subscribe to window resize event "onComponentDidMount"
         window.addEventListener("resize", handleResizeWindow);
         return () => {
@@ -33,11 +38,8 @@ export default function App(): React.ReactElement {
                         <Categorysection sectionNumber={1} title={'About Me'}>
                             <AboutMeSection width={width} breakpoint={breakpoint} />
                         </Categorysection>
-                        <Categorysection sectionNumber={2} title={'Experience'}>
-                            <ItemsList Projects={true} />
-                        </Categorysection>
-                        <Categorysection sectionNumber={3} title={'Projects'}>
-                            <ItemsList Projects={false} />
+                        <Categorysection sectionNumber={2} title={'Experience & Projects'}>
+                            <Timeline items={items} />
                         </Categorysection>
                         <ProjectCardCorner title='Ideas List'>
                             <div className='mt-8 mx-8 flex flex-col justify-center'>
