@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+deploy.env
+bin/
+*.md
+*.sh
+*.yaml
+docker-compose.yml
+Makefile
+.git
