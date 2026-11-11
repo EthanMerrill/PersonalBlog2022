@@ -7,6 +7,7 @@ import React from 'react';
 import ItemsList from './components/ItemsList/ItemsList';
 import SocialLinks from './components/SocialLinks/SocialLinks';
 import AboutMeSection from './components/AboutMeSection/AboutMeSection';
+import ChatWidget from './components/ChatWidget/ChatWidget';
 
 export default function App(): React.ReactElement {
     const [width, setWidth] = React.useState<number>(window.innerWidth);
@@ -54,6 +55,7 @@ export default function App(): React.ReactElement {
                     </div>
                 </div>
             </div>
+            <ChatWidget />
         </div>
     );
 }
