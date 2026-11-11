@@ -76,10 +76,22 @@ const ChatWidget: React.FC = () => {
 		setIsOpen(true);
 	};
 
+	// Set on close so focus returns to the bubble after it re-renders: on
+	// mobile the bubble is display:none while the panel is open, so focusing
+	// it synchronously inside close() is a no-op.
+	const returnFocusRef = useRef(false);
+
 	const close = useCallback(() => {
+		returnFocusRef.current = true;
 		setIsOpen(false);
-		bubbleRef.current?.focus();
 	}, []);
+
+	useEffect(() => {
+		if (!isOpen && returnFocusRef.current) {
+			returnFocusRef.current = false;
+			bubbleRef.current?.focus();
+		}
+	}, [isOpen]);
 
 	const handleSubmit = useCallback(async () => {
 		if (!input.trim() || isProcessingAI) return;
@@ -124,7 +136,7 @@ const ChatWidget: React.FC = () => {
 	return (
 		<div className="fixed bottom-4 right-4 z-50 sm:bottom-0 sm:right-0 sm:w-full pointer-events-none flex flex-col items-end sm:items-stretch">
 			{hasOpened && (
-				<div id={PANEL_ID} role="dialog" aria-label={LABEL} hidden={!isOpen} className="chat-widget-panel pointer-events-auto mb-3 flex flex-col bg-white shadow-xl border border-gray-200 rounded-lg w-[360px] h-[480px] max-h-[calc(100vh-6rem)] sm:w-full sm:mb-0 sm:h-[70vh] sm:max-h-none sm:rounded-b-none">
+				<div id={PANEL_ID} role="dialog" aria-label={LABEL} hidden={!isOpen} className={`chat-widget-panel pointer-events-auto mb-3 ${isOpen ? "flex" : "hidden"} flex-col bg-white shadow-xl border border-gray-200 rounded-lg w-[360px] h-[480px] max-h-[calc(100vh-6rem)] sm:w-full sm:mb-0 sm:h-[70vh] sm:max-h-none sm:rounded-b-none`}>
 					<div className="flex items-center justify-between px-3 py-2 bg-blue-accent text-white rounded-t-lg">
 						<span className="text-sm font-medium">Ethan's assistant</span>
 						<button type="button" onClick={close} aria-label="Close chat" className="px-2 text-lg leading-none">

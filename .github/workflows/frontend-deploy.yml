@@ -53,6 +53,9 @@ jobs:
         # NEXT_PUBLIC_* value is inlined into the public bundle.
         env:
           NEXT_PUBLIC_SECRETS_SERVICE_URL: ${{ vars.NEXT_PUBLIC_SECRETS_SERVICE_URL || 'https://portfolio.merrill-api.com' }}
+          # Set explicitly so a failed content fetch fails the build instead of
+          # silently shipping the local fixture data.
+          NEXT_PUBLIC_POCKETBASE_URL: ${{ vars.NEXT_PUBLIC_POCKETBASE_URL || 'https://data.merrill-api.com' }}
         run: npm run build
 
       - name: Upload build artifacts
