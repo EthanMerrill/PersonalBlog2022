@@ -1,23 +1,37 @@
 $bp: 700px;
 $gutter: 40px;
 $line: hsl(200, 100%, 40%);
+$bar-work: hsl(120, 32%, 52%);
+$bar-project: hsl(36, 70%, 56%);
 
 .timeline {
 	position: relative;
 	max-width: 64rem;
 	margin: 0 auto;
-	padding: 1.5rem 1rem;
+	padding: 0.5rem 0 1.5rem;
 }
 
 .headers {
 	display: grid;
 	grid-template-columns: 1fr $gutter 1fr;
-	font-family: Oswald, sans-serif;
-	text-transform: uppercase;
-	letter-spacing: 0.08em;
+	align-items: end;
+	margin-bottom: 0.75rem;
 	color: hsla(0, 0%, 20%, 1);
-	opacity: 0.8;
-	h3 { margin: 0; }
+	h3 {
+		margin: 0;
+		font-family: Oswald, sans-serif;
+		font-weight: 500;
+		font-size: 1.35rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.85;
+	}
+	p {
+		margin: 0.15rem 0 0;
+		font-size: 0.85rem;
+		line-height: 1.3;
+		opacity: 0.65;
+	}
 }
 .headerLeft { text-align: right; padding-right: 1rem; }
 .headerRight { text-align: left; padding-left: 1rem; }
@@ -46,12 +60,12 @@ $line: hsl(200, 100%, 40%);
 	display: grid;
 	grid-template-columns: 1fr $gutter 1fr;
 	align-items: start;
-	padding: 0.75rem 0;
+	padding: 0.875rem 0;
 }
 
 .colLeft { grid-column: 1; }
 .colRight { grid-column: 3; }
-.cardCell, .labelCell { grid-row: 1; min-width: 0; }
+.cardCell { grid-row: 1; min-width: 0; }
 .cardCell.colLeft { padding-right: 0.75rem; }
 .cardCell.colRight { padding-left: 0.75rem; }
 
@@ -69,18 +83,140 @@ $line: hsl(200, 100%, 40%);
 	z-index: 1;
 }
 
-.labelCell {
-	margin-top: 1.25rem;
-	font-size: 0.75rem;
-	color: hsla(0, 0%, 20%, 1);
-	opacity: 0.75;
-	&.colLeft { text-align: right; padding-right: 0.75rem; }
-	&.colRight { text-align: left; padding-left: 0.75rem; }
+/* ---- Card ---- */
+.card {
+	position: relative;
+	overflow: hidden;
+	background: #fff;
+	border: 1px solid hsla(210, 15%, 40%, 0.16);
+	border-radius: 10px;
+	box-shadow: 0 1px 2px hsla(220, 40%, 15%, 0.04), 0 4px 14px hsla(220, 40%, 15%, 0.05);
+	transition: box-shadow 0.2s ease;
+	&:hover { box-shadow: 0 2px 4px hsla(220, 40%, 15%, 0.06), 0 10px 28px hsla(220, 40%, 15%, 0.1); }
+	// Kind colour along the top edge, matching the card's duration bar.
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 0 0 auto;
+		height: 3px;
+		background: var(--kind);
+		z-index: 1;
+	}
+}
+.cardWork { --kind: #{$bar-work}; }
+.cardProject { --kind: #{$bar-project}; }
+
+.image {
+	display: block;
+	aspect-ratio: 12 / 5;
+	height: auto;
+	object-position: top;
+	border-bottom: 1px solid hsla(210, 15%, 40%, 0.12);
 }
 
-.image { aspect-ratio: 16 / 9; height: auto; }
+.body {
+	padding: 1.1rem 1.25rem 1rem;
+	text-align: left;
+}
 
-.tag, .cardDate { display: none; }
+.meta {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.35rem;
+}
+
+.date {
+	font-family: Oswald, sans-serif;
+	font-size: 0.75rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: hsla(0, 0%, 40%, 1);
+}
+
+.title {
+	margin: 0;
+	font-family: Inter, sans-serif;
+	font-weight: 600;
+	font-size: 1.125rem;
+	line-height: 1.3;
+	letter-spacing: -0.01em;
+	color: hsla(0, 0%, 12%, 1);
+}
+
+.subtitle {
+	margin: 0.2rem 0 0;
+	font-size: 0.875rem;
+	font-weight: 400;
+	line-height: 1.4;
+	color: hsla(0, 0%, 42%, 1);
+}
+
+.blurb {
+	margin: 0.75rem 0 0;
+	font-size: 0.875rem;
+	font-weight: 300;
+	line-height: 1.6;
+	color: hsla(0, 0%, 28%, 1);
+}
+
+.tech {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin: 0.85rem 0 0;
+	padding: 0;
+	list-style: none;
+	li {
+		font-size: 0.7rem;
+		line-height: 1;
+		padding: 0.3rem 0.55rem;
+		border-radius: 9999px;
+		background: hsla(210, 25%, 94%, 1);
+		color: hsla(0, 0%, 30%, 1);
+	}
+	.techMore {
+		background: transparent;
+		border: 1px dashed hsla(0, 0%, 65%, 1);
+		color: hsla(0, 0%, 45%, 1);
+	}
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin-top: 1rem;
+	padding-top: 0.75rem;
+	border-top: 1px solid hsla(210, 15%, 40%, 0.1);
+	font-size: 0.85rem;
+	a {
+		color: $line;
+		font-weight: 500;
+		&:hover { text-decoration: underline; }
+	}
+}
+
+.blurbClamped {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.more {
+	margin-left: auto;
+	padding: 0;
+	border: 0;
+	background: none;
+	font-size: 0.8rem;
+	color: $line;
+	cursor: pointer;
+	&:hover { text-decoration: underline; }
+}
+
+.tag { display: none; }
 
 @media (max-width: $bp) {
 	.headers { display: none; }
@@ -91,8 +227,6 @@ $line: hsl(200, 100%, 40%);
 		grid-column: 2;
 		padding: 0 0 0 0.75rem;
 	}
-	.labelCell { display: none; }
-	.cardDate { display: block; }
 	.tag {
 		display: inline-block;
 		font-size: 0.65rem;
@@ -100,8 +234,116 @@ $line: hsl(200, 100%, 40%);
 		letter-spacing: 0.06em;
 		border-radius: 9999px;
 		padding: 0 0.5rem;
-		margin-bottom: 0.25rem;
 	}
 	.tagWork { background: #daecda; }
 	.tagProject { background: #f2e8d9; }
+}
+
+/* ---- Time-scaled layout (desktop, after hydration) ---- */
+// On wide screens the timeline breaks out of the page column so overlapping
+// cards can sit side by side (the JS decides how many columns fit).
+$wide: min(96rem, calc(100vw - 7rem));
+@media (min-width: 1500px) {
+	.placed {
+		max-width: none;
+		width: $wide;
+		margin-left: calc((100% - #{$wide}) / 2);
+	}
+}
+
+.placed {
+	.headers { grid-template-columns: 1fr calc(var(--half) * 2) 1fr; }
+	.headerLeft { padding-right: 0; }
+	.headerRight { padding-left: 0; }
+
+	.item {
+		position: absolute;
+		display: block;
+		padding: 0;
+		width: calc(50% - var(--half));
+		z-index: 1;
+		transition: top 0.25s ease;
+		&[data-side="left"] { left: 0; }
+		&[data-side="right"] { right: 0; }
+	}
+	.cardCell.colLeft, .cardCell.colRight { padding: 0; }
+	.dot { display: none; }
+	.active .card { box-shadow: 0 0 0 2px $line, 0 10px 28px hsla(220, 40%, 15%, 0.1); }
+}
+
+.scale {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.connectors {
+	position: absolute;
+	top: 0;
+	left: 0;
+	overflow: visible;
+	path {
+		fill: none;
+		stroke: $line;
+		stroke-width: 1.5;
+		opacity: 0.35;
+		transition: opacity 0.15s;
+	}
+	circle { fill: $line; opacity: 0.5; }
+	// Invisible, wider stroke so the thin connector is easy to hover.
+	.hit {
+		stroke: transparent;
+		stroke-width: 12;
+		opacity: 1;
+		pointer-events: stroke;
+		cursor: pointer;
+	}
+	.active path, .active circle { opacity: 1; }
+}
+
+.bar {
+	position: absolute;
+	border-radius: 9999px;
+	pointer-events: auto; // the surrounding scale ignores the pointer; bars opt back in
+	cursor: pointer;
+	// Wider hover target than the 6px bar, without reaching into neighbouring lanes.
+	&::after {
+		content: "";
+		position: absolute;
+		inset: -4px -2px;
+	}
+	opacity: 0.85;
+	transition: opacity 0.15s, box-shadow 0.15s;
+	&.active { opacity: 1; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 0 3.5px $line; }
+	// Ongoing work fades into "Now" rather than ending with a cap.
+	&.ongoing { border-top-left-radius: 0; border-top-right-radius: 0; }
+}
+.barWork { background: $bar-work; }
+.barProject { background: $bar-project; }
+.barWork.ongoing { background: linear-gradient(to bottom, rgba($bar-work, 0.15), $bar-work 48px); }
+.barProject.ongoing { background: linear-gradient(to bottom, rgba($bar-project, 0.15), $bar-project 48px); }
+
+.yearMark {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 2;
+	font-family: Oswald, sans-serif;
+	font-size: 0.65rem;
+	letter-spacing: 0.06em;
+	line-height: 1;
+	padding: 2px 6px;
+	border-radius: 9999px;
+	background: #fff;
+	color: hsla(0, 0%, 20%, 0.8);
+	border: 1px solid rgba($line, 0.4);
+}
+
+// Compressed stretch of time: the spine turns dashed.
+.gap {
+	position: absolute;
+	left: 50%;
+	width: 2px;
+	transform: translateX(-50%);
+	background: repeating-linear-gradient(to bottom, #fff 0 4px, transparent 4px 9px);
 }
