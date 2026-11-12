@@ -1,28 +1,32 @@
 import React from 'react'
 
-const AppHeader = () => {
-  // JSX return
-  return (
-    <header className="App-header">
-      <link rel="preconnect" href="https://fonts.googleapis.com"></link>
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true"></link>
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap" rel="stylesheet"></link>
-      <div className="wrapper">
-        <div className="rotated-wrapper">
-          <div className="base one"></div>
-          <div className="base two"></div>
-          <div className="base three"></div>
-          <div className="base four"></div>
-        </div>
-        <div className="diagonal-mask"></div>
-      </div>
-      <div className='title-container'>
-        <h1 className="intro-title">Hi! I'm Ethan<br></br>
-          This is what I do </h1>
-      </div>
+const SECTIONS = [
+  { href: '#about', label: 'About' },
+  { href: '#experience', label: 'Experience & Projects' },
+  { href: '#ideas', label: 'Ideas' },
+]
 
-    </header >
-  )
-}
+const AppHeader = () => (
+  <header className="hero">
+    <div className="hero-aurora" aria-hidden="true">
+      <div className="base one"></div>
+      <div className="base two"></div>
+      <div className="base three"></div>
+      <div className="base four"></div>
+    </div>
+    <div className="hero-inner">
+      <p className="hero-eyebrow">Software engineer · Boston</p>
+      <h1 className="hero-title">
+        Hi! I’m Ethan.
+        <span className="hero-title-sub">This is what I do.</span>
+      </h1>
+      <nav className="hero-nav" aria-label="Sections">
+        {SECTIONS.map((s) => (
+          <a key={s.href} href={s.href}>{s.label}</a>
+        ))}
+      </nav>
+    </div>
+  </header>
+)
 
 export default AppHeader

@@ -40,24 +40,24 @@ beforeAll(() => {
 			return [];
 		}
 	}
-	// @ts-ignore
+	// @ts-expect-error -- test-only mock/cleanup of a global
 	global.IntersectionObserver = MockIntersectionObserver;
 });
 
 afterAll(() => {
 	// Clean up IntersectionObserver mock
 	if (global.IntersectionObserver) {
-		// @ts-ignore
+		// @ts-expect-error -- test-only mock/cleanup of a global
 		delete global.IntersectionObserver;
 	}
 	// Clean up requestAnimationFrame/cancelAnimationFrame mocks from window
 	if (typeof window !== "undefined") {
 		if (window.requestAnimationFrame) {
-			// @ts-ignore
+			// @ts-expect-error -- test-only mock/cleanup of a global
 			delete window.requestAnimationFrame;
 		}
 		if (window.cancelAnimationFrame) {
-			// @ts-ignore
+			// @ts-expect-error -- test-only mock/cleanup of a global
 			delete window.cancelAnimationFrame;
 		}
 	}

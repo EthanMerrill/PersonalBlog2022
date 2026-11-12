@@ -1,0 +1,17 @@
+@keyframes chat-widget-pop {
+	from {
+		opacity: 0;
+		transform: translateY(12px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+// Only animate when the user has not asked for reduced motion.
+@media (prefers-reduced-motion: no-preference) {
+	.chat-widget-panel {
+		animation: chat-widget-pop 160ms ease-out;
+	}
+}

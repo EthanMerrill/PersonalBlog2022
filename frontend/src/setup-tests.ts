@@ -1,5 +1,5 @@
 // Vitest setup file
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import {vi} from "vitest";
 
 // Mock IntersectionObserver for tests
@@ -23,7 +23,7 @@ class MockIntersectionObserver {
   }
 }
 
-global.IntersectionObserver = MockIntersectionObserver as any;
+global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
 // Mock ResizeObserver for tests
 class MockResizeObserver {
@@ -38,7 +38,7 @@ class MockResizeObserver {
   disconnect() {}
 }
 
-global.ResizeObserver = MockResizeObserver as any;
+global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
 // Mock window.matchMedia for tests
 Object.defineProperty(window, "matchMedia", {
