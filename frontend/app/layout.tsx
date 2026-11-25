@@ -1,4 +1,5 @@
 import type {Metadata} from "next";
+import Script from "next/script";
 import "./globals.scss";
 import "../src/style/style.scss";
 import "react-tooltip/dist/react-tooltip.css";
@@ -25,6 +26,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 			<body>
 				<noscript>You need to enable JavaScript to run this app.</noscript>
 				{children}
+				{/* Plausible analytics (self-hosted, cookieless). The site must also be added in the Plausible dashboard. */}
+				<Script defer data-domain="ethanmerrill.com" src="https://plausible.merrill-api.com/js/script.js" strategy="afterInteractive" />
 			</body>
 		</html>
 	);
