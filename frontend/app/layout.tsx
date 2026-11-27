@@ -26,8 +26,12 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 			<body>
 				<noscript>You need to enable JavaScript to run this app.</noscript>
 				{children}
-				{/* Plausible analytics (self-hosted, cookieless). The site must also be added in the Plausible dashboard. */}
-				<Script defer data-domain="ethanmerrill.com" src="https://plausible.merrill-api.com/js/script.js" strategy="afterInteractive" />
+				{/* OpenPanel analytics (self-hosted, cookieless), project "ethanmerrill.com" on openpanel.merrill-api.com. */}
+				<Script id="openpanel-init" strategy="afterInteractive">
+					{`window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();
+window.op("init",{apiUrl:"https://openpanel-api.merrill-api.com",clientId:"2c6dc667-22e6-4821-a9af-5e937c4610a3",trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true});`}
+				</Script>
+				<Script src="https://openpanel.merrill-api.com/op1.js" strategy="afterInteractive" />
 			</body>
 		</html>
 	);
